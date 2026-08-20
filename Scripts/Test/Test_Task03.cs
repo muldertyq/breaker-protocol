@@ -39,7 +39,7 @@ namespace BreakerProtocol.Test
 			AddChild(_tipsLabel);
 
 			// 2. 监听全局热重载信号
-			DataManager.Instance.DataReloaded += RefreshDisplay;
+			DataManager.Instance.OnDataReloaded += RefreshDisplay;
 
 			// 3. 初始刷新
 			RefreshDisplay();

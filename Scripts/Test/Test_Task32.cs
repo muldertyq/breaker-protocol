@@ -89,7 +89,7 @@ namespace BreakerProtocol.Test
 
 		private void TriggerEvent(string eventId)
 		{
-			if (SpaceEventDatabase.Events.TryGetValue(eventId, out var ev))
+			if (SpaceEventDatabase.TryGetEvent(eventId, out var ev))
 			{
 				_eventUI.OpenEvent(ev, _playerShip);
 			}

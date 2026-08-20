@@ -1,0 +1,59 @@
+{
+  "techNodes": [
+	{
+	  "id": "tech_starting_scraps_1",
+	  "name": "初期补给信贷 I",
+	  "category": "Economy",
+	  "tier": 1,
+	  "coreCost": 1,
+	  "description": "初始出击时随舰携带的金属废料储备增加 +150 单位。",
+	  "prerequisites": [],
+	  "statModifier": "StartingScraps",
+	  "modifierValue": 150.0
+	},
+	{
+	  "id": "tech_starting_scraps_2",
+	  "name": "初期补给信贷 II",
+	  "category": "Economy",
+	  "tier": 2,
+	  "coreCost": 2,
+	  "description": "初始出击时随舰携带的金属废料储备额外增加 +250 单位。",
+	  "prerequisites": ["tech_starting_scraps_1"],
+	  "statModifier": "StartingScraps",
+	  "modifierValue": 250.0
+	},
+	{
+	  "id": "tech_hull_reinforce_1",
+	  "name": "钛钨复合龙骨 I",
+	  "category": "OffenseDefense",
+	  "tier": 1,
+	  "coreCost": 1,
+	  "description": "全舰所有结构与装甲构件的最大生命值上限提升 +15%。",
+	  "prerequisites": [],
+	  "statModifier": "HullMaxHpMult",
+	  "modifierValue": 0.15
+	},
+	{
+	  "id": "tech_pulse_accelerator",
+	  "name": "超导量子母线",
+	  "category": "Pipeline",
+	  "tier": 1,
+	  "coreCost": 2,
+	  "description": "内部 PCB 能量脉冲在导线中的传导速度永久提升 +30%。",
+	  "prerequisites": [],
+	  "statModifier": "PulseSpeedMult",
+	  "modifierValue": 0.30
+	},
+	{
+	  "id": "tech_market_vip",
+	  "name": "黑市走私特许证",
+	  "category": "Utility",
+	  "tier": 1,
+	  "coreCost": 2,
+	  "description": "深空黑市所有在售构件与战备维修服务价格享受 8 折优惠。",
+	  "prerequisites": [],
+	  "statModifier": "MarketDiscount",
+	  "modifierValue": 0.20
+	}
+  ]
+}

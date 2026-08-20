@@ -1,0 +1,15 @@
+{
+  "defaultStockCount": 5,
+  "scrapResellRate": 0.60,
+  "fieldRepairBaseCost": 100,
+  "ablativeResetCost": 75,
+  "stockRerollCost": 30,
+  "categoryBasePrices": {
+	"Weapon": 140,
+	"Thruster": 90,
+	"PowerSource": 180,
+	"Modifier": 120,
+	"Logic": 80,
+	"Armor": 60
+  }
+}

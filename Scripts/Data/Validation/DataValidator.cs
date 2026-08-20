@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using BreakerProtocol.Core;
 using BreakerProtocol.Data.Models;
 
 namespace BreakerProtocol.Data.Validation
@@ -31,18 +32,100 @@ namespace BreakerProtocol.Data.Validation
 	}
 
 	/// <summary>
-	/// 强类型数据合规校验器
-	/// 负责在构件/蓝图注册前拦截非法配置
+	/// 强类型全域数据合规校验器
+	/// 负责在构件/蓝图/外循环规则注册前拦截非法配置
 	/// </summary>
 	public static class DataValidator
 	{
 		/// <summary>
-		/// 校验单个构件定义的合法性
+		/// 全局全量校验入口（在 DataManager 加载完毕后统一调用）
 		/// </summary>
-		/// <param name="module">待校验的构件数据</param>
-		/// <param name="sourceFilePath">来源文件路径（用于报错追踪）</param>
-		/// <param name="entries">输出的错误/警告列表</param>
-		/// <returns>若无 Error 级别错误则返回 true</returns>
+		public static bool ValidateAll(DataManager dm)
+		{
+			bool allValid = true;
+
+			// 1. 校验深空异象事件合法性
+			foreach (var ev in dm.Events.GetAll())
+			{
+				if (string.IsNullOrWhiteSpace(ev.Title))
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 异象事件 [{ev.Id}] 缺少标题 (Title)！[/color]");
+					allValid = false;
+				}
+
+				if (ev.Choices == null || ev.Choices.Count == 0)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 异象事件 [{ev.Id}] 没有任何可选分支选项 (Choices)！[/color]");
+					allValid = false;
+				}
+				else
+				{
+					foreach (var choice in ev.Choices)
+					{
+						if (choice.SuccessRate < 0.0f || choice.SuccessRate > 1.0f)
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 异象事件 [{ev.Id}] 选项 '{choice.ChoiceText}' 的成功率超出 [0.0, 1.0] 范围: {choice.SuccessRate}[/color]");
+							allValid = false;
+						}
+					}
+				}
+			}
+
+			// 2. 校验科技树节点与前置依赖
+			foreach (var tech in dm.Techs.GetAll())
+			{
+				if (tech.CoreCost < 0)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 科技节点 [{tech.Id}] 的算力核心消耗为负数: {tech.CoreCost}[/color]");
+					allValid = false;
+				}
+
+				if (tech.Prerequisites != null)
+				{
+					foreach (var req in tech.Prerequisites)
+					{
+						if (!dm.Techs.Contains(req))
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 科技节点 [{tech.Id}] 依赖了不存在的前置科技 ID: [{req}][/color]");
+							allValid = false;
+						}
+					}
+				}
+			}
+
+			// 3. 校验灾厄契约
+			foreach (var pact in dm.Pacts.GetAll())
+			{
+				if (pact.ScrapBonusMultiplier < 0.0f)
+				{
+					GD.PrintRich($"[color=yellow][DataValidator:Warning] 灾厄契约 [{pact.Id}] 废料倍率加成为负数: {pact.ScrapBonusMultiplier}[/color]");
+				}
+			}
+
+			// 4. 校验黑市经济规则
+			var cfg = dm.MarketConfig;
+			if (cfg.DefaultStockCount <= 0)
+			{
+				GD.PrintRich("[color=yellow][DataValidator:Warning] 黑市默认货架数量 DefaultStockCount <= 0，已自动重置为默认 5 格。[/color]");
+				cfg.DefaultStockCount = 5;
+			}
+
+			if (cfg.ScrapResellRate <= 0.0f || cfg.ScrapResellRate > 1.0f)
+			{
+				GD.PrintRich($"[color=yellow][DataValidator:Warning] 黑市折旧回购率 ScrapResellRate ({cfg.ScrapResellRate}) 异常，建议在 (0.0, 1.0] 区间。[/color]");
+			}
+
+			if (allValid)
+			{
+				GD.PrintRich("[color=green][DataValidator:Info] ✔ 全域数据（构件、蓝图、异象、科技树、契约、黑市）规则校验全部通过！[/color]");
+			}
+
+			return allValid;
+		}
+
+		/// <summary>
+		/// 校验单个构件定义的合法性 (保持原版几何与引脚检查)
+		/// </summary>
 		public static bool ValidateModule(ModuleDataDefinition module, string sourceFilePath, out List<ValidationEntry> entries)
 		{
 			entries = new List<ValidationEntry>();

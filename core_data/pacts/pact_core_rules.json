@@ -1,0 +1,31 @@
+{
+  "pacts": [
+	{
+	  "id": "pact_heat_surge",
+	  "title": "【熔火过载协议】",
+	  "penalty": "ThermalOverload",
+	  "reward": "HyperPulse",
+	  "scrapBonusMultiplier": 0.8,
+	  "themeColor": "#FF4500",
+	  "description": "强制超频反应堆以提升脉冲速度，但系统散热受阻，发热量激增。"
+	},
+	{
+	  "id": "pact_glass_cannon",
+	  "title": "【薄甲碎刃契约】",
+	  "penalty": "FragileHull",
+	  "reward": "CriticalOvercharge",
+	  "scrapBonusMultiplier": 1.0,
+	  "themeColor": "#00BFFF",
+	  "description": "剥离外部厚重装甲以搭载高能暴击矩阵，装甲基础抗性大幅削弱。"
+	},
+	{
+	  "id": "pact_gravity_curse",
+	  "title": "【重力牢笼诅咒】",
+	  "penalty": "HighInertia",
+	  "reward": "ScrapSurge",
+	  "scrapBonusMultiplier": 1.5,
+	  "themeColor": "#9370DB",
+	  "description": "引力常数异变导致战舰惯性质量骤增，但战利品磁吸打捞产出翻倍。"
+	}
+  ]
+}

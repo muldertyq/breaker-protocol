@@ -14,10 +14,6 @@ config/name="Breaker Protocol"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
-[autoload]
-
-DataManager="*uid://d1c20gvkuw67"
-
 [display]
 
 window/size/viewport_width=1280

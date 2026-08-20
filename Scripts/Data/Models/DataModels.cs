@@ -1,3 +1,5 @@
+using System;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace BreakerProtocol.Data.Models
@@ -24,7 +26,7 @@ namespace BreakerProtocol.Data.Models
 	}
 
 	/// <summary>
-	/// 单个构件完整定义模型 (对应 modules/*.json)
+	/// 单个构件完整定义模型 (对应 core_data/modules/*.json)
 	/// </summary>
 	public class ModuleDataDefinition
 	{
@@ -40,10 +42,10 @@ namespace BreakerProtocol.Data.Models
 		[JsonPropertyName("armorResistance")] public float ArmorResistance { get; set; } = 10.0f;
 		
 		[JsonPropertyName("spritePath")] public string SpritePath { get; set; } = string.Empty;
-		[JsonPropertyName("tags")] public string[] Tags { get; set; } = System.Array.Empty<string>();
-		[JsonPropertyName("pins")] public PinDefinition[] Pins { get; set; } = System.Array.Empty<PinDefinition>();
+		[JsonPropertyName("tags")] public string[] Tags { get; set; } = Array.Empty<string>();
+		[JsonPropertyName("pins")] public PinDefinition[] Pins { get; set; } = Array.Empty<PinDefinition>();
 		
 		// 动态附加的武器与效果参数（存储为原始 JsonElement，交由 EffectProcessor 解析）
-		[JsonPropertyName("properties")] public System.Text.Json.JsonElement Properties { get; set; }
+		[JsonPropertyName("properties")] public JsonElement Properties { get; set; }
 	}
 }

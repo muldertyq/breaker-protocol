@@ -1,189 +1,162 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
 using BreakerProtocol.World.Pacts;
 
 namespace BreakerProtocol.UI.Pacts
 {
 	/// <summary>
-	/// 灾厄契约高阶热度选择界面
+	/// 灾厄契约全息交互面板 (TASK-39：完全由 CalamityPactDef 数据驱动)
 	/// </summary>
-	public partial class CalamityPactsUI : Control
+	public partial class CalamityPactsUI : CanvasLayer
 	{
-		private Rect2 _panelArea;
-		private float _animTime = 0.0f;
-		private Vector2 _currentMousePos = Vector2.Zero;
-		private PactId? _hoveredPact = null;
+		private PanelContainer _mainPanel = null!;
+		private HBoxContainer _cardsContainer = null!;
+		private Button _skipButton = null!;
+		private Button _confirmButton = null!;
 
-		public event Action? OnStartWithPacts;
+		public event Action<CalamityPactDef>? OnPactSelected;
+		public event Action? OnStartWithPacts; // 兼容 Task-38 的出击事件
+		public event Action? OnSkipped;
 
 		public override void _Ready()
 		{
-			SetAnchorsPreset(LayoutPreset.FullRect);
-			GrowHorizontal = GrowDirection.Both;
-			GrowVertical = GrowDirection.Both;
-			MouseFilter = MouseFilterEnum.Stop;
-
-			Vector2 vpSize = GetViewportRect().Size;
-			CustomMinimumSize = vpSize;
-			Size = vpSize;
+			BuildInterface();
+			Visible = false;
 		}
 
-		public override void _Process(double delta)
+		private void BuildInterface()
 		{
-			_animTime += (float)delta * 3.0f;
-
-			Vector2 vpSize = GetViewportRect().Size;
-			if (vpSize.X > 100 && vpSize.Y > 100 && Size != vpSize)
+			var overlay = new ColorRect
 			{
-				Size = vpSize;
-				CustomMinimumSize = vpSize;
-			}
+				Color = new Color(0, 0, 0, 0.75f),
+				MouseFilter = Control.MouseFilterEnum.Stop
+			};
+			overlay.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+			AddChild(overlay);
 
-			_currentMousePos = GetLocalMousePosition();
-			UpdateHoverState(_currentMousePos);
+			_mainPanel = new PanelContainer();
+			_mainPanel.SetAnchorsPreset(Control.LayoutPreset.Center);
+			_mainPanel.CustomMinimumSize = new Vector2(900, 520);
+			AddChild(_mainPanel);
 
-			QueueRedraw();
-		}
+			var rootVBox = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+			rootVBox.AddThemeConstantOverride("separation", 20);
+			_mainPanel.AddChild(rootVBox);
 
-		private void UpdateHoverState(Vector2 mousePos)
-		{
-			_hoveredPact = null;
-			int index = 0;
-			foreach (var pact in CalamityPactManager.Instance.Pacts.Values)
+			var titleLabel = new RichTextLabel
 			{
-				if (GetPactCardRect(index).HasPoint(mousePos))
-				{
-					_hoveredPact = pact.Id;
-					break;
-				}
-				index++;
-			}
+				BbcodeEnabled = true,
+				Text = "[center][b][font_size=28][color=crimson]✦ 虚空深处之灾厄契约 ✦[/color][/font_size][/b]\n" +
+					   "[color=gray]签署灾厄法则以换取高额打捞产出与能量超载[/color][/center]",
+				FitContent = true,
+				CustomMinimumSize = new Vector2(800, 65),
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			rootVBox.AddChild(titleLabel);
 
-			bool isHoverBtn = GetStartButtonRect().HasPoint(mousePos);
-			MouseDefaultCursorShape = (_hoveredPact != null || isHoverBtn) ? CursorShape.PointingHand : CursorShape.Arrow;
-		}
-
-		public override void _GuiInput(InputEvent @event)
-		{
-			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+			_cardsContainer = new HBoxContainer
 			{
-				HandleClick(_currentMousePos);
-				AcceptEvent();
-			}
-		}
+				Alignment = BoxContainer.AlignmentMode.Center
+			};
+			_cardsContainer.AddThemeConstantOverride("separation", 20);
+			rootVBox.AddChild(_cardsContainer);
 
-		public override void _UnhandledInput(InputEvent @event)
-		{
-			if (!Visible) return;
-			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+			var btnHBox = new HBoxContainer
 			{
-				HandleClick(_currentMousePos);
-			}
-		}
+				Alignment = BoxContainer.AlignmentMode.Center
+			};
+			btnHBox.AddThemeConstantOverride("separation", 30);
+			rootVBox.AddChild(btnHBox);
 
-		private void HandleClick(Vector2 clickPos)
-		{
-			int index = 0;
-			foreach (var pact in CalamityPactManager.Instance.Pacts.Values)
+			_confirmButton = new Button
 			{
-				if (GetPactCardRect(index).HasPoint(clickPos))
-				{
-					CalamityPactManager.Instance.TogglePact(pact.Id);
-					return;
-				}
-				index++;
-			}
-
-			if (GetStartButtonRect().HasPoint(clickPos))
+				Text = "确认签署并出击",
+				CustomMinimumSize = new Vector2(180, 40)
+			};
+			_confirmButton.Pressed += () =>
 			{
 				Visible = false;
 				OnStartWithPacts?.Invoke();
-			}
-		}
+			};
+			btnHBox.AddChild(_confirmButton);
 
-		private Rect2 GetPanelArea()
-		{
-			Vector2 vpSize = GetViewportRect().Size;
-			float w = vpSize.X > 100 ? vpSize.X : 1280.0f;
-			float h = vpSize.Y > 100 ? vpSize.Y : 720.0f;
-			return new Rect2(120, 65, w - 240, h - 130);
-		}
-
-		private Rect2 GetPactCardRect(int index)
-		{
-			var panel = GetPanelArea();
-			int col = index % 2;
-			int row = index / 2;
-			float cardW = (panel.Size.X - 90) * 0.5f;
-			float cardH = 105.0f;
-
-			float x = panel.Position.X + 30 + (col * (cardW + 30));
-			float y = panel.Position.Y + 80 + (row * (cardH + 20));
-			return new Rect2(x, y, cardW, cardH);
-		}
-
-		private Rect2 GetStartButtonRect()
-		{
-			var panel = GetPanelArea();
-			return new Rect2(panel.Position.X + (panel.Size.X * 0.5f) - 130, panel.End.Y - 60, 260, 42);
-		}
-
-		public override void _Draw()
-		{
-			_panelArea = GetPanelArea();
-			var font = ThemeDB.FallbackFont;
-
-			int totalHeat = CalamityPactManager.Instance.GetTotalHeatLevel();
-			float mult = CalamityPactManager.Instance.GetScoreRewardMultiplier();
-
-			// 1. 绘制科幻深渊契约背板
-			DrawRect(_panelArea, new Color(0.04f, 0.02f, 0.05f, 0.96f));
-			DrawRect(_panelArea, totalHeat > 0 ? Colors.OrangeRed : Colors.Cyan, false, 2.5f);
-
-			// 2. 标头与当前热度总览
-			DrawString(font, _panelArea.Position + new Vector2(30, 36), "【 极限挑战 · 灾厄契约热度系统 】 CALAMITY HEAT PACTS", HorizontalAlignment.Left, -1, 16, Colors.Gold);
-			string heatTag = $"• 当前热度等级: 🔥 {totalHeat} 级  (结算收益: +{(mult - 1.0f) * 100:F0}%)";
-			DrawString(font, _panelArea.Position + new Vector2(_panelArea.Size.X - 360, 36), heatTag, HorizontalAlignment.Right, -1, 13, Colors.OrangeRed);
-			DrawLine(_panelArea.Position + new Vector2(25, 50), _panelArea.Position + new Vector2(_panelArea.Size.X - 25, 50), new Color(0.4f, 0.5f, 0.6f, 0.4f), 1.5f);
-
-			// 3. 绘制 6 大灾厄契约卡片
-			int index = 0;
-			foreach (var pact in CalamityPactManager.Instance.Pacts.Values)
+			_skipButton = new Button
 			{
-				Rect2 card = GetPactCardRect(index);
-				bool isHover = pact.Id == _hoveredPact;
+				Text = "放弃签署 (保持现状)",
+				CustomMinimumSize = new Vector2(180, 40)
+			};
+			_skipButton.Pressed += () =>
+			{
+				Visible = false;
+				OnSkipped?.Invoke();
+			};
+			btnHBox.AddChild(_skipButton);
+		}
 
-				Color cardBg = pact.IsActive ? new Color(0.20f, 0.05f, 0.05f, 0.95f) : new Color(0.06f, 0.08f, 0.12f, 0.85f);
-				Color cardBorder = pact.IsActive ? Colors.OrangeRed : (isHover ? Colors.White : new Color(0.3f, 0.4f, 0.5f, 0.6f));
-
-				DrawRect(card, cardBg);
-				DrawRect(card, cardBorder, false, pact.IsActive ? 2.2f : 1.2f);
-
-				// 勾选状态框
-				Rect2 checkRect = new(card.Position.X + 15, card.Position.Y + 16, 20, 20);
-				DrawRect(checkRect, pact.IsActive ? Colors.OrangeRed : new Color(0.1f, 0.1f, 0.1f));
-				DrawRect(checkRect, Colors.White, false, 1.0f);
-				if (pact.IsActive)
-				{
-					DrawString(font, checkRect.Position + new Vector2(3, 16), "✔", HorizontalAlignment.Center, -1, 14, Colors.White);
-				}
-
-				// 标题与热度等级
-				DrawString(font, card.Position + new Vector2(45, 30), $"{pact.Name} (🔥 +{pact.HeatLevel} 级)", HorizontalAlignment.Left, -1, 13, pact.IsActive ? Colors.Gold : Colors.White);
-				DrawString(font, card.Position + new Vector2(15, 60), pact.Description, HorizontalAlignment.Left, (int)card.Size.X - 30, 11, Colors.LightGray);
-				DrawString(font, card.Position + new Vector2(15, 92), $"• 惩罚: {pact.PenaltyTag}", HorizontalAlignment.Left, -1, 11, Colors.OrangeRed);
-
-				index++;
+		public void PresentPactChoices(List<CalamityPactDef> candidates)
+		{
+			foreach (var child in _cardsContainer.GetChildren())
+			{
+				child.QueueFree();
 			}
 
-			// 4. 底部确认按钮
-			Rect2 startBtn = GetStartButtonRect();
-			bool isHoverBtn = startBtn.HasPoint(_currentMousePos);
-			DrawRect(startBtn, isHoverBtn ? new Color(0.75f, 0.35f, 0.15f) : new Color(0.55f, 0.25f, 0.10f));
-			DrawRect(startBtn, isHoverBtn ? Colors.White : Colors.Gold, false, isHoverBtn ? 2.0f : 1.2f);
-			DrawString(font, startBtn.Position + new Vector2(30, 26), "🔥 签署契约 · 开启极限战役", HorizontalAlignment.Center, -1, 13, Colors.White);
+			foreach (var pact in candidates)
+			{
+				var card = CreatePactCard(pact);
+				_cardsContainer.AddChild(card);
+			}
+
+			Visible = true;
+		}
+
+		private PanelContainer CreatePactCard(CalamityPactDef pact)
+		{
+			var cardPanel = new PanelContainer
+			{
+				CustomMinimumSize = new Vector2(260, 300)
+			};
+
+			var cardVBox = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Begin };
+			cardVBox.AddThemeConstantOverride("separation", 12);
+			cardPanel.AddChild(cardVBox);
+
+			var title = new RichTextLabel
+			{
+				BbcodeEnabled = true,
+				Text = $"[center][b][color={pact.ThemeColorHex}]{pact.Title}[/color][/b][/center]",
+				FitContent = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			cardVBox.AddChild(title);
+
+			var desc = new RichTextLabel
+			{
+				BbcodeEnabled = true,
+				Text = $"[color=salmon]▼ 代价惩罚:[/color]\n{pact.Penalty}\n\n" +
+					   $"[color=lightgreen]▲ 赐福增益:[/color]\n{pact.Reward}\n\n" +
+					   $"[color=yellow]✦ 废料收益: +{(pact.ScrapBonusMultiplier * 100):F0}%[/color]",
+				FitContent = true,
+				CustomMinimumSize = new Vector2(230, 140),
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			cardVBox.AddChild(desc);
+
+			var signBtn = new Button
+			{
+				Text = CalamityPactManager.Instance.IsActive(pact.Id) ? "✔ 已签署生效" : "签署契约",
+				CustomMinimumSize = new Vector2(180, 36)
+			};
+			signBtn.Pressed += () =>
+			{
+				CalamityPactManager.Instance.TogglePact(pact.Id);
+				signBtn.Text = CalamityPactManager.Instance.IsActive(pact.Id) ? "✔ 已签署生效" : "签署契约";
+				OnPactSelected?.Invoke(pact);
+			};
+			cardVBox.AddChild(signBtn);
+
+			return cardPanel;
 		}
 	}
 }

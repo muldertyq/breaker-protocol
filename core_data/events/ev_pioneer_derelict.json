@@ -1,0 +1,66 @@
+{
+  "id": "ev_pioneer_derelict",
+  "title": "【异象】废弃的先驱者科研船",
+  "factionTag": "古代科技遗迹",
+  "themeColorHex": "#59D9F2",
+  "description": "雷达在一片碎石带中捕获到微弱的求救信标。一艘隶属于旧时代的先驱者级科研船在真空中静默漂流，舰桥外壳已被等离子烧蚀，但其主动力舱仍有微弱的能量读数。",
+  "choices": [
+	{
+	  "choiceText": "强行黑入主服务器：尝试逆向破译算力核心与蓝图数据",
+	  "requiredConditionTag": "[高风险 65% 成功率]",
+	  "requiredScraps": 0,
+	  "requiredCores": 0,
+	  "successRate": 0.65,
+	  "successOutcome": {
+		"type": "GainCurrency",
+		"isSuccess": true,
+		"scrapDelta": 120,
+		"coreDelta": 1,
+		"repairRatio": 0.0,
+		"damageAmount": 0.0,
+		"resultLog": "破译成功！主机未损毁的数据阵列中提取出 1 颗【算力核心】和 120 废料！"
+	  },
+	  "failureOutcome": {
+		"type": "DamageModule",
+		"isSuccess": false,
+		"scrapDelta": 0,
+		"coreDelta": 0,
+		"repairRatio": 0.0,
+		"damageAmount": 60.0,
+		"resultLog": "触发了反入侵防御电涌！全舰电子系统过载，外部构件受到 60 点电涌损伤！"
+	  }
+	},
+	{
+	  "choiceText": "派工程无人机切割外装甲板：稳妥搜刮金属废料",
+	  "requiredConditionTag": "",
+	  "requiredScraps": 0,
+	  "requiredCores": 0,
+	  "successRate": 1.0,
+	  "successOutcome": {
+		"type": "GainCurrency",
+		"isSuccess": true,
+		"scrapDelta": 80,
+		"coreDelta": 0,
+		"repairRatio": 0.0,
+		"damageAmount": 0.0,
+		"resultLog": "无人机安全回收了 80 单位的高纯度装甲废料。"
+	  }
+	},
+	{
+	  "choiceText": "忽视漂流舰，保持航向离开",
+	  "requiredConditionTag": "",
+	  "requiredScraps": 0,
+	  "requiredCores": 0,
+	  "successRate": 1.0,
+	  "successOutcome": {
+		"type": "GainCurrency",
+		"isSuccess": true,
+		"scrapDelta": 0,
+		"coreDelta": 0,
+		"repairRatio": 0.0,
+		"damageAmount": 0.0,
+		"resultLog": "你选择不冒任何未知风险，战舰平稳加速驶离了碎片区。"
+	  }
+	}
+  ]
+}
