@@ -21,12 +21,12 @@ namespace BreakerProtocol.World.Meta
 		public string Id { get; set; } = string.Empty;
 		public string Name { get; set; } = string.Empty;
 		public TechCategory Category { get; set; }
-		public int Tier { get; set; } = 1; // 1, 2, 3
-		public int Cost { get; set; } = 50; // 消耗数据碎片
+		public int Tier { get; set; } = 1;
+		public int Cost { get; set; } = 50;
 		public string Description { get; set; } = string.Empty;
-		public string? PrerequisiteId { get; set; } // 前置科技 ID
+		public string? PrerequisiteId { get; set; }
 		public bool IsUnlocked { get; set; } = false;
-		public Vector2 DisplayPosition { get; set; } // UI 绘制坐标
+		public Vector2 DisplayPosition { get; set; }
 	}
 
 	/// <summary>
@@ -37,7 +37,6 @@ namespace BreakerProtocol.World.Meta
 		private static MetaProgressionManager? _instance;
 		public static MetaProgressionManager Instance => _instance ??= new MetaProgressionManager();
 
-		// 局外研发数据碎片 (Data Fragments)
 		public int DataFragments { get; private set; } = 280;
 
 		public Dictionary<string, MetaTechNode> AllTechs { get; } = new();
@@ -53,9 +52,7 @@ namespace BreakerProtocol.World.Meta
 		{
 			AllTechs.Clear();
 
-			// ---------------------------------------------------------
 			// 1. 重工冶金分支 (Metallurgy)
-			// ---------------------------------------------------------
 			AddTech(new MetaTechNode
 			{
 				Id = "tech_meta_armor_1",
@@ -89,9 +86,7 @@ namespace BreakerProtocol.World.Meta
 				DisplayPosition = new Vector2(220, 440)
 			});
 
-			// ---------------------------------------------------------
 			// 2. 超频电容分支 (Electronics)
-			// ---------------------------------------------------------
 			AddTech(new MetaTechNode
 			{
 				Id = "tech_elec_bus_1",
@@ -125,9 +120,7 @@ namespace BreakerProtocol.World.Meta
 				DisplayPosition = new Vector2(580, 440)
 			});
 
-			// ---------------------------------------------------------
 			// 3. 矢量推进分支 (Propulsion)
-			// ---------------------------------------------------------
 			AddTech(new MetaTechNode
 			{
 				Id = "tech_prop_rcs_1",
@@ -174,12 +167,17 @@ namespace BreakerProtocol.World.Meta
 			OnDataFragmentsChanged?.Invoke(DataFragments);
 		}
 
+		public void SetDataFragments(int amount)
+		{
+			DataFragments = Mathf.Max(0, amount);
+			OnDataFragmentsChanged?.Invoke(DataFragments);
+		}
+
 		public bool UnlockTech(string techId)
 		{
 			if (!AllTechs.TryGetValue(techId, out var tech)) return false;
 			if (tech.IsUnlocked) return false;
 
-			// 前置依赖检查
 			if (!string.IsNullOrEmpty(tech.PrerequisiteId))
 			{
 				if (!AllTechs.TryGetValue(tech.PrerequisiteId, out var pre) || !pre.IsUnlocked)
@@ -188,7 +186,6 @@ namespace BreakerProtocol.World.Meta
 				}
 			}
 
-			// 研发点数扣除
 			if (DataFragments >= tech.Cost)
 			{
 				DataFragments -= tech.Cost;
@@ -217,17 +214,41 @@ namespace BreakerProtocol.World.Meta
 		}
 
 		/// <summary>
-		/// 在新开局时，将已解锁的 Meta 科技增益全局注入飞船与经济系统
+		/// 从存档中原子化装载母港科技与碎片状态 (专供 SaveManager.LoadMeta 调用)
 		/// </summary>
+		public void LoadState(int fragments, List<string>? unlockedTechIds)
+		{
+			// 1. 重置全部科技解锁标记 (不退款)
+			foreach (var tech in AllTechs.Values)
+			{
+				tech.IsUnlocked = false;
+			}
+
+			// 2. 精确覆盖碎片资产
+			DataFragments = Mathf.Max(0, fragments);
+
+			// 3. 标记已解锁科技
+			if (unlockedTechIds != null)
+			{
+				foreach (var techId in unlockedTechIds)
+				{
+					if (AllTechs.TryGetValue(techId, out var tech))
+					{
+						tech.IsUnlocked = true;
+					}
+				}
+			}
+
+			OnDataFragmentsChanged?.Invoke(DataFragments);
+		}
+
 		public void ApplyMetaBuffsToNewRun(ShipEntity ship)
 		{
-			// 1. 经济增益注入 (走私暗格: 开局初始废料+150)
 			if (IsUnlocked("tech_elec_economy_2"))
 			{
 				PlayerEconomyManager.Instance.AddScraps(150);
 			}
 
-			// 2. 装甲耐久增益注入 (+15% 复合装甲渗碳强化)
 			if (IsUnlocked("tech_meta_armor_1") && ship.Grid != null)
 			{
 				foreach (var m in ship.Grid.Modules)
