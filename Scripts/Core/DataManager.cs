@@ -10,7 +10,6 @@ namespace BreakerProtocol.Core
 {
 	/// <summary>
 	/// 全局数据注册与配置驱动总管中枢 (单例模式)
-	/// 统一管理构件、蓝图、异象、科技树、契约与黑市规则
 	/// </summary>
 	public class DataManager
 	{
@@ -25,9 +24,10 @@ namespace BreakerProtocol.Core
 		public Registry<SpaceEventNode> Events { get; } = new("Events");
 		public Registry<TechNodeDef> Techs { get; } = new("Techs");
 		public Registry<CalamityPactDef> Pacts { get; } = new("Pacts");
+		public Registry<DropTableDef> DropTables { get; } = new("DropTables");
+		public Registry<EncounterDef> Encounters { get; } = new("Encounters");
 		public MarketConfigDef MarketConfig { get; private set; } = new();
 
-		// 唯一的全局数据重载广播事件
 		public event Action? OnDataReloaded;
 
 		private DataManager()
@@ -35,9 +35,6 @@ namespace BreakerProtocol.Core
 			LoadAllData();
 		}
 
-		/// <summary>
-		/// 扫描 core_data 与 mods 目录并统一装载
-		/// </summary>
 		public void LoadAllData()
 		{
 			GD.Print("[DataManager] 开始全域数据驱动扫描加载...");
@@ -47,29 +44,29 @@ namespace BreakerProtocol.Core
 			Events.Clear();
 			Techs.Clear();
 			Pacts.Clear();
+			DropTables.Clear();
+			Encounters.Clear();
 
 			string baseDir = ProjectSettings.GlobalizePath("res://");
 			string coreDataDir = Path.Combine(baseDir, "core_data");
 
-			// 1. 加载构件与蓝图
+			// 1. 基础构件与蓝图
 			LoadModulesAndBlueprints(coreDataDir);
 
-			// 2. 加载深空异象事件 (core_data/events/)
+			// 2. 外循环与规则表
 			LoadEvents(Path.Combine(coreDataDir, "events"));
-
-			// 3. 加载母港科技树 (core_data/techs/)
 			LoadTechs(Path.Combine(coreDataDir, "techs"));
-
-			// 4. 加载灾厄契约 (core_data/pacts/)
 			LoadPacts(Path.Combine(coreDataDir, "pacts"));
-
-			// 5. 加载黑市经济配置 (core_data/markets/)
 			LoadMarketConfig(Path.Combine(coreDataDir, "markets"));
 
-			// 6. 执行全域数据校验防爆
+			// 3. TASK-40 新增：掉落表与遭遇战池
+			LoadDropTables(Path.Combine(coreDataDir, "drops"));
+			LoadEncounters(Path.Combine(coreDataDir, "encounters"));
+
+			// 4. 数据一致性校验
 			DataValidator.ValidateAll(this);
 
-			GD.Print($"[DataManager] 全域数据装载完成: {Modules.Count} 构件 | {Blueprints.Count} 蓝图 | {Events.Count} 异象 | {Techs.Count} 科技 | {Pacts.Count} 契约");
+			GD.Print($"[DataManager] 全域数据装载完成: {Modules.Count} 构件 | {Blueprints.Count} 蓝图 | {Events.Count} 异象 | {Techs.Count} 科技 | {Pacts.Count} 契约 | {DropTables.Count} 掉落池 | {Encounters.Count} 遭遇池");
 			OnDataReloaded?.Invoke();
 		}
 
@@ -103,21 +100,17 @@ namespace BreakerProtocol.Core
 		private void LoadEvents(string eventsDir)
 		{
 			if (!Directory.Exists(eventsDir)) return;
-
 			foreach (var file in Directory.EnumerateFiles(eventsDir, "*.json", SearchOption.AllDirectories))
 			{
 				try
 				{
 					string text = File.ReadAllText(file);
 					var ev = JsonSerializer.Deserialize<SpaceEventNode>(text);
-					if (ev != null && !string.IsNullOrEmpty(ev.Id))
-					{
-						Events.Register(ev.Id, ev);
-					}
+					if (ev != null && !string.IsNullOrEmpty(ev.Id)) Events.Register(ev.Id, ev);
 				}
 				catch (Exception ex)
 				{
-					GD.PrintErr($"[DataManager] 解析异象事件失败: {file} | {ex.Message}");
+					GD.PrintErr($"[DataManager] 解析异象失败: {file} | {ex.Message}");
 				}
 			}
 		}
@@ -125,7 +118,6 @@ namespace BreakerProtocol.Core
 		private void LoadTechs(string techsDir)
 		{
 			if (!Directory.Exists(techsDir)) return;
-
 			foreach (var file in Directory.EnumerateFiles(techsDir, "*.json", SearchOption.AllDirectories))
 			{
 				try
@@ -150,7 +142,6 @@ namespace BreakerProtocol.Core
 		private void LoadPacts(string pactsDir)
 		{
 			if (!Directory.Exists(pactsDir)) return;
-
 			foreach (var file in Directory.EnumerateFiles(pactsDir, "*.json", SearchOption.AllDirectories))
 			{
 				try
@@ -175,7 +166,6 @@ namespace BreakerProtocol.Core
 		private void LoadMarketConfig(string marketDir)
 		{
 			if (!Directory.Exists(marketDir)) return;
-
 			string configPath = Path.Combine(marketDir, "market_config.json");
 			if (File.Exists(configPath))
 			{
@@ -188,6 +178,54 @@ namespace BreakerProtocol.Core
 				catch (Exception ex)
 				{
 					GD.PrintErr($"[DataManager] 解析黑市配置失败: {configPath} | {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadDropTables(string dropsDir)
+		{
+			if (!Directory.Exists(dropsDir)) return;
+			foreach (var file in Directory.EnumerateFiles(dropsDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					var pack = JsonSerializer.Deserialize<DropTableFileDef>(text);
+					if (pack?.DropTables != null)
+					{
+						foreach (var table in pack.DropTables)
+						{
+							if (!string.IsNullOrEmpty(table.TableId)) DropTables.Register(table.TableId, table);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析掉落池失败: {file} | {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadEncounters(string encountersDir)
+		{
+			if (!Directory.Exists(encountersDir)) return;
+			foreach (var file in Directory.EnumerateFiles(encountersDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					var pack = JsonSerializer.Deserialize<EncounterPoolFileDef>(text);
+					if (pack?.Encounters != null)
+					{
+						foreach (var enc in pack.Encounters)
+						{
+							if (!string.IsNullOrEmpty(enc.EncounterId)) Encounters.Register(enc.EncounterId, enc);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析遭遇战失败: {file} | {ex.Message}");
 				}
 			}
 		}

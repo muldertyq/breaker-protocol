@@ -115,9 +115,59 @@ namespace BreakerProtocol.Data.Validation
 				GD.PrintRich($"[color=yellow][DataValidator:Warning] 黑市折旧回购率 ScrapResellRate ({cfg.ScrapResellRate}) 异常，建议在 (0.0, 1.0] 区间。[/color]");
 			}
 
+			// 5. 校验掉落表合法性 (TASK-40 新增)
+			foreach (var table in dm.DropTables.GetAll())
+			{
+				if (table.MinScraps < 0 || table.MaxScraps < table.MinScraps)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 掉落表 [{table.TableId}] 废料区间非法: [{table.MinScraps}, {table.MaxScraps}][/color]");
+					allValid = false;
+				}
+
+				if (table.Entries != null)
+				{
+					foreach (var entry in table.Entries)
+					{
+						if (entry.Weight < 0)
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 掉落表 [{table.TableId}] 存在负数权重: {entry.Weight}[/color]");
+							allValid = false;
+						}
+						if (entry.DropType == DropItemType.Module && !string.IsNullOrEmpty(entry.ModuleId))
+						{
+							if (!dm.Modules.Contains(entry.ModuleId))
+							{
+								GD.PrintRich($"[color=yellow][DataValidator:Warning] 掉落表 [{table.TableId}] 引用了不存在的构件 ID: [{entry.ModuleId}][/color]");
+							}
+						}
+					}
+				}
+			}
+
+			// 6. 校验遭遇战合法性 (TASK-40 新增)
+			foreach (var enc in dm.Encounters.GetAll())
+			{
+				if (enc.Ships == null || enc.Ships.Count == 0)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 遭遇战 [{enc.EncounterId}] 未配置任何战舰！[/color]");
+					allValid = false;
+				}
+				else
+				{
+					foreach (var ship in enc.Ships)
+					{
+						if (!dm.Blueprints.Contains(ship.BlueprintId))
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 遭遇战 [{enc.EncounterId}] 引用了不存在的战舰蓝图: [{ship.BlueprintId}][/color]");
+							allValid = false;
+						}
+					}
+				}
+			}
+
 			if (allValid)
 			{
-				GD.PrintRich("[color=green][DataValidator:Info] ✔ 全域数据（构件、蓝图、异象、科技树、契约、黑市）规则校验全部通过！[/color]");
+				GD.PrintRich("[color=green][DataValidator:Info] ✔ 全域数据（构件、蓝图、异象、科技树、契约、黑市、掉落池、遭遇池）规则校验全部通过！[/color]");
 			}
 
 			return allValid;
@@ -126,6 +176,10 @@ namespace BreakerProtocol.Data.Validation
 		/// <summary>
 		/// 校验单个构件定义的合法性 (保持原版几何与引脚检查)
 		/// </summary>
+		/// <param name="module">待校验的构件数据</param>
+		/// <param name="sourceFilePath">来源文件路径（用于报错追踪）</param>
+		/// <param name="entries">输出的错误/警告列表</param>
+		/// <returns>若无 Error 级别错误则返回 true</returns>
 		public static bool ValidateModule(ModuleDataDefinition module, string sourceFilePath, out List<ValidationEntry> entries)
 		{
 			entries = new List<ValidationEntry>();

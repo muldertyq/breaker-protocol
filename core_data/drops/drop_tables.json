@@ -1,0 +1,55 @@
+{
+  "dropTables": [
+	{
+	  "tableId": "drop_asteroid_standard",
+	  "displayName": "标准矿质小行星掉落池",
+	  "minScraps": 15,
+	  "maxScraps": 35,
+	  "coreDropChance": 0.0,
+	  "entries": [
+		{ "moduleId": "", "weight": 70, "dropType": "None" },
+		{ "moduleId": "hf_arm_plate_2x2", "weight": 20, "dropType": "Module" },
+		{ "moduleId": "bc_arm_chitin_plate_2x2", "weight": 10, "dropType": "Module" }
+	  ]
+	},
+	{
+	  "tableId": "drop_enemy_light",
+	  "displayName": "轻型先锋战机掉落池",
+	  "minScraps": 30,
+	  "maxScraps": 60,
+	  "coreDropChance": 0.05,
+	  "entries": [
+		{ "moduleId": "", "weight": 50, "dropType": "None" },
+		{ "moduleId": "hf_eng_rcs_heavy", "weight": 20, "dropType": "Module" },
+		{ "moduleId": "vs_eng_vector_rcs_1x1", "weight": 15, "dropType": "Module" },
+		{ "moduleId": "hf_log_jumper", "weight": 15, "dropType": "Module" }
+	  ]
+	},
+	{
+	  "tableId": "drop_enemy_elite",
+	  "displayName": "精英巡洋旗舰掉落池",
+	  "minScraps": 120,
+	  "maxScraps": 220,
+	  "coreDropChance": 0.65,
+	  "entries": [
+		{ "moduleId": "hf_wep_railgun_h", "weight": 25, "dropType": "Module" },
+		{ "moduleId": "vs_wep_phase_laser_m", "weight": 25, "dropType": "Module" },
+		{ "moduleId": "bc_wep_spore_launcher_m", "weight": 25, "dropType": "Module" },
+		{ "moduleId": "hf_mod_accelerator", "weight": 15, "dropType": "Module" },
+		{ "moduleId": "vs_mod_prism_splitter", "weight": 10, "dropType": "Module" }
+	  ]
+	},
+	{
+	  "tableId": "drop_boss_titan",
+	  "displayName": "泰坦要塞 Boss 终极掉落池",
+	  "minScraps": 400,
+	  "maxScraps": 600,
+	  "coreDropChance": 1.0,
+	  "entries": [
+		{ "moduleId": "vs_wep_tachyon_lance_h", "weight": 35, "dropType": "Module" },
+		{ "moduleId": "hf_wep_plasma_mortar", "weight": 35, "dropType": "Module" },
+		{ "moduleId": "vs_source_singularity_3x2", "weight": 30, "dropType": "Module" }
+	  ]
+	}
+  ]
+}

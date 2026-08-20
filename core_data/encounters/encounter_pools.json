@@ -1,0 +1,46 @@
+{
+  "encounters": [
+	{
+	  "encounterId": "enc_combat_patrol",
+	  "displayName": "常规先锋巡逻队",
+	  "category": "Combat",
+	  "difficultyRating": 1,
+	  "ships": [
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Scout", "spawnOffset": { "x": -250.0, "y": -150.0 } },
+		{ "blueprintId": "bp_bc_s_leech", "role": "Scout", "spawnOffset": { "x": 250.0, "y": 150.0 } }
+	  ]
+	},
+	{
+	  "encounterId": "enc_combat_strike_group",
+	  "displayName": "重工联合突击小队",
+	  "category": "Combat",
+	  "difficultyRating": 2,
+	  "ships": [
+		{ "blueprintId": "bp_hf_m_anvil", "role": "Leader", "spawnOffset": { "x": 0.0, "y": -300.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": -200.0, "y": -400.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": 200.0, "y": -400.0 } }
+	  ]
+	},
+	{
+	  "encounterId": "enc_elite_syndicate_duo",
+	  "displayName": "虚空枢纽双子刺客",
+	  "category": "Elite",
+	  "difficultyRating": 3,
+	  "ships": [
+		{ "blueprintId": "bp_vs_m_prism", "role": "Elite", "spawnOffset": { "x": -350.0, "y": -200.0 } },
+		{ "blueprintId": "bp_vs_m_prism", "role": "Elite", "spawnOffset": { "x": 350.0, "y": -200.0 } }
+	  ]
+	},
+	{
+	  "encounterId": "enc_boss_titan_citadel",
+	  "displayName": "泰坦熔炉旗舰决战",
+	  "category": "Boss",
+	  "difficultyRating": 5,
+	  "ships": [
+		{ "blueprintId": "bp_hf_l_ironclad", "role": "Boss", "spawnOffset": { "x": 0.0, "y": -500.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": -400.0, "y": -600.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": 400.0, "y": -600.0 } }
+	  ]
+	}
+  ]
+}
