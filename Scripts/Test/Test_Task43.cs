@@ -7,9 +7,11 @@ using BreakerProtocol.Data.Persistence;
 using BreakerProtocol.Ship;
 using BreakerProtocol.UI.CombatHUD;
 using BreakerProtocol.UI.Events;
+using BreakerProtocol.UI.Hangar;
 using BreakerProtocol.UI.Market;
 using BreakerProtocol.UI.Menu;
 using BreakerProtocol.UI.Meta;
+using BreakerProtocol.UI.Sandbox;
 using BreakerProtocol.UI.Settlement;
 using BreakerProtocol.World.Director;
 using BreakerProtocol.World.Economy;
@@ -20,9 +22,9 @@ using BreakerProtocol.World.Settlement;
 namespace BreakerProtocol.Test
 {
 	/// <summary>
-	/// TASK-42 演练场：全局游戏状态机与场景无缝过渡系统验证中枢
+	/// TASK-43 演练场：母港主菜单、选船出征与科研总装界面验证中枢
 	/// </summary>
-	public partial class Test_Task42 : Node2D
+	public partial class Test_Task43 : Node2D
 	{
 		private ShipEntity _playerShip = null!;
 		private CombatCameraController _camera = null!;
@@ -31,12 +33,13 @@ namespace BreakerProtocol.Test
 		private VfxManager _vfx = null!;
 		private SceneTransitionManager _transitionManager = null!;
 
-		// 全景 UI
 		private MainMenuUI _mainMenuUI = null!;
+		private FleetHangarUI _fleetHangarUI = null!;
 		private SectorMapUI _mapUI = null!;
 		private BlackMarketShopUI _marketUI = null!;
 		private SpaceEventDialogueUI _eventUI = null!;
 		private MetaTechTreeUI _metaTechUI = null!;
+		private SandboxBayUI _sandboxUI = null!;
 		private RunSummaryUI _summaryUI = null!;
 		private CombatHUD _combatHUD = null!;
 		private RichTextLabel _topBannerLabel = null!;
@@ -60,7 +63,7 @@ namespace BreakerProtocol.Test
 			PlayerEconomyManager.Instance.Reset(initialScraps: 200, initialCores: 1);
 			_playerShip = new ShipEntity
 			{
-				Name = "PlayerShip_T42",
+				Name = "PlayerShip_T43",
 				Position = Vector2.Zero
 			};
 			_playerShip.AddToGroup("Player");
@@ -76,11 +79,11 @@ namespace BreakerProtocol.Test
 			AddChild(_camera);
 			_juice.BindCamera(_camera);
 
-			// 3. 构建 UI 并绑定状态机
+			// 3. 构建全景 UI 并注入 GameStateManager
 			CreateAllUIs();
 			BindGameStateManager();
 
-			// 4. 初始直接切入主菜单 (关闭多余 HUD)
+			// 4. 初始切入主菜单
 			GameStateManager.Instance.SwitchState(GameState.MainMenu, false);
 		}
 
@@ -111,13 +114,29 @@ namespace BreakerProtocol.Test
 			_metaTechUI.Visible = false;
 			canvas.AddChild(_metaTechUI);
 
+			_sandboxUI = new SandboxBayUI();
+			_sandboxUI.Visible = false;
+			canvas.AddChild(_sandboxUI);
+
 			_summaryUI = new RunSummaryUI();
 			_summaryUI.OnNavigateToMetaTech += () => GameStateManager.Instance.SwitchState(GameState.HangarMetaTech);
-			_summaryUI.OnStartNewRun += () => GameStateManager.Instance.StartNewRun();
+			_summaryUI.OnStartNewRun += () => GameStateManager.Instance.SwitchState(GameState.FleetHangar);
 			_summaryUI.Visible = false;
 			canvas.AddChild(_summaryUI);
 
-			// 顶部全息测试快捷键提示栏
+			_fleetHangarUI = new FleetHangarUI();
+			_fleetHangarUI.OnShipSelectedAndEngage += (blueprintId) => GameStateManager.Instance.StartNewRun(blueprintId);
+			_fleetHangarUI.OnBackToMainMenu += () => GameStateManager.Instance.SwitchState(GameState.MainMenu);
+			_fleetHangarUI.Visible = false;
+			canvas.AddChild(_fleetHangarUI);
+
+			_mainMenuUI = new MainMenuUI();
+			_mainMenuUI.OnNewRunRequested += () => GameStateManager.Instance.SwitchState(GameState.FleetHangar, true, "✦ 正在对接母港出征战备机库 ✦");
+			_mainMenuUI.OnContinueRunRequested += () => GameStateManager.Instance.ContinueSavedRun();
+			_mainMenuUI.OnHangarRequested += () => GameStateManager.Instance.SwitchState(GameState.HangarMetaTech, true, "✦ 正在连线母港科研总局 ✦");
+			_mainMenuUI.OnSandboxRequested += () => GameStateManager.Instance.SwitchState(GameState.SandboxBay, true, "✦ 正在启动虚拟风洞靶场 ✦");
+			canvas.AddChild(_mainMenuUI);
+
 			_topBannerLabel = new RichTextLabel
 			{
 				Position = new Vector2(20, 10),
@@ -127,13 +146,6 @@ namespace BreakerProtocol.Test
 			};
 			_topBannerLabel.AddThemeFontSizeOverride("normal_font_size", 13);
 			canvas.AddChild(_topBannerLabel);
-
-			// 主菜单置于最顶层
-			_mainMenuUI = new MainMenuUI();
-			_mainMenuUI.OnNewRunRequested += () => GameStateManager.Instance.StartNewRun();
-			_mainMenuUI.OnContinueRunRequested += () => GameStateManager.Instance.ContinueSavedRun();
-			_mainMenuUI.OnHangarRequested += () => GameStateManager.Instance.SwitchState(GameState.HangarMetaTech);
-			canvas.AddChild(_mainMenuUI);
 		}
 
 		private void BindGameStateManager()
@@ -141,10 +153,12 @@ namespace BreakerProtocol.Test
 			var gsm = GameStateManager.Instance;
 			gsm.PlayerShip = _playerShip;
 			gsm.MainMenuUI = _mainMenuUI;
+			gsm.FleetHangarUI = _fleetHangarUI;
 			gsm.MapUI = _mapUI;
 			gsm.MarketUI = _marketUI;
 			gsm.EventUI = _eventUI;
 			gsm.MetaTechUI = _metaTechUI;
+			gsm.SandboxUI = _sandboxUI;
 			gsm.SummaryUI = _summaryUI;
 			gsm.CombatHUD = _combatHUD;
 		}
@@ -179,25 +193,21 @@ namespace BreakerProtocol.Test
 					else
 						gsm.SwitchState(GameState.MainMenu);
 				}
-				else if (ek.Keycode == Key.M)
+				else if (ek.Keycode == Key.Key1)
 				{
-					gsm.SwitchState(GameState.SectorMap);
+					gsm.SwitchState(GameState.FleetHangar);
 				}
-				else if (ek.Keycode == Key.B)
-				{
-					gsm.SwitchState(GameState.BlackMarket);
-				}
-				else if (ek.Keycode == Key.H)
+				else if (ek.Keycode == Key.Key2)
 				{
 					gsm.SwitchState(GameState.HangarMetaTech);
 				}
-				else if (ek.Keycode == Key.V)
+				else if (ek.Keycode == Key.Key3)
 				{
-					gsm.TriggerGameOver(RunEndingType.Victory);
+					gsm.SwitchState(GameState.SandboxBay);
 				}
-				else if (ek.Keycode == Key.K)
+				else if (ek.Keycode == Key.M)
 				{
-					gsm.TriggerGameOver(RunEndingType.Defeat_Destroyed);
+					gsm.SwitchState(GameState.SectorMap);
 				}
 			}
 		}
@@ -223,21 +233,19 @@ namespace BreakerProtocol.Test
 			string stateName = gsm.CurrentState switch
 			{
 				GameState.MainMenu        => "[color=cyan]主标题菜单 (MainMenu)[/color]",
-				GameState.HangarMetaTech  => "[color=gold]母港科研局 (HangarMetaTech)[/color]",
 				GameState.FleetHangar     => "[color=gold]选船机库 (FleetHangar)[/color]",
+				GameState.HangarMetaTech  => "[color=yellow]母港科研局 (MetaTech)[/color]",
+				GameState.SandboxBay      => "[color=magenta]风洞测试场 (SandboxBay)[/color]",
 				GameState.SectorMap       => "[color=lime]星区跃迁星图 (SectorMap)[/color]",
 				GameState.Combat          => "[color=crimson]战术空战模式 (Combat)[/color]",
-				GameState.BlackMarket     => "[color=yellow]废土黑市终端 (BlackMarket)[/color]",
-				GameState.AnomalyDialogue => "[color=magenta]深空异象日志 (AnomalyDialogue)[/color]",
-				GameState.RunSettlement   => "[color=green]战役综合结算 (RunSettlement)[/color]",
-				_                         => "[color=white]未知[/color]"
+				_                         => "[color=white]其他[/color]"
 			};
 
 			_topBannerLabel.Text =
-				$"[b][color=yellow]【TASK-42 状态机测试】[/color][/b] 状态: {stateName} | " +
-				$"资产: [color=yellow]{eco.Scraps} ⚙[/color] [color=cyan]{eco.ComputeCores} 💠[/color] | " +
-				$"局内存档: {(SaveManager.Instance.HasActiveRunSave() ? "[color=lime]已保存[/color]" : "[color=gray]无[/color]")}\n" +
-				$"[color=gray][快捷键]: ESC 主菜单 | M 星图 | B 黑市 | H 母港科研 | V 胜利结算 | K 阵亡结算[/color]";
+				$"[b][color=yellow]【TASK-43 选船出征与母港机库演练场】[/color][/b] 当前状态: {stateName} | " +
+				$"当前战舰构件数: [color=cyan]{_playerShip.Grid.Modules.Count}[/color] | " +
+				$"资产: [color=yellow]{eco.Scraps} ⚙[/color] [color=cyan]{eco.ComputeCores} 💠[/color]\n" +
+				$"[color=gray][快捷流转]: [1] 选船机库 | [2] 母港科研 | [3] 虚拟风洞 | [M] 跃迁星图 | [ESC] 主菜单[/color]";
 		}
 	}
 }

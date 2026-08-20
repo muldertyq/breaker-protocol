@@ -20,14 +20,15 @@ namespace BreakerProtocol.Core
 		public override void _Ready()
 		{
 			_instance = this;
-			Layer = 128;
+			Layer = 128; // 置于所有 UI 之上
 
 			Vector2 vpSize = GetViewport().GetVisibleRect().Size;
 
 			// 1. 全屏黑色暗化遮罩
 			_fadeOverlay = new ColorRect
 			{
-				Color = new Color(0.01f, 0.02f, 0.05f, 0.0f),
+				Color = new Color(0.01f, 0.02f, 0.05f, 1.0f),
+				Modulate = new Color(1, 1, 1, 0.0f),
 				MouseFilter = Control.MouseFilterEnum.Ignore,
 				Size = vpSize,
 				CustomMinimumSize = vpSize
@@ -48,9 +49,13 @@ namespace BreakerProtocol.Core
 			AddChild(_loadingLabel);
 		}
 
-		public void Transition(Action onBlackScreen, float fadeDuration = 0.35f, string? customHint = null)
+		public void Transition(Action onBlackScreen, float fadeDuration = 0.30f, string? customHint = null)
 		{
-			if (IsTransitioning) return;
+			if (IsTransitioning)
+			{
+				onBlackScreen?.Invoke();
+				return;
+			}
 			IsTransitioning = true;
 
 			Vector2 vpSize = GetViewport().GetVisibleRect().Size;
@@ -66,19 +71,19 @@ namespace BreakerProtocol.Core
 			_activeTween.SetParallel(true);
 
 			// Phase 1: 暗化渐入
-			_activeTween.TweenProperty(_fadeOverlay, "color:a", 1.0f, fadeDuration)
+			_activeTween.TweenProperty(_fadeOverlay, "modulate:a", 1.0f, fadeDuration)
 				.SetTrans(Tween.TransitionType.Cubic)
 				.SetEase(Tween.EaseType.Out);
 			_activeTween.TweenProperty(_loadingLabel, "modulate:a", 1.0f, fadeDuration * 0.8f);
 
-			// Phase 2: 执行切换
+			// Phase 2: 执行切换动作
 			_activeTween.Chain().TweenCallback(Callable.From(() =>
 			{
 				onBlackScreen?.Invoke();
 			}));
 
 			// Phase 3: 渐出恢复
-			_activeTween.Chain().TweenProperty(_fadeOverlay, "color:a", 0.0f, fadeDuration)
+			_activeTween.Chain().TweenProperty(_fadeOverlay, "modulate:a", 0.0f, fadeDuration)
 				.SetTrans(Tween.TransitionType.Cubic)
 				.SetEase(Tween.EaseType.In);
 			_activeTween.TweenProperty(_loadingLabel, "modulate:a", 0.0f, fadeDuration * 0.6f);

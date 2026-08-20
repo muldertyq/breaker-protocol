@@ -4,9 +4,11 @@ using BreakerProtocol.Data.Persistence;
 using BreakerProtocol.Ship;
 using BreakerProtocol.UI.CombatHUD;
 using BreakerProtocol.UI.Events;
+using BreakerProtocol.UI.Hangar;
 using BreakerProtocol.UI.Market;
 using BreakerProtocol.UI.Menu;
 using BreakerProtocol.UI.Meta;
+using BreakerProtocol.UI.Sandbox;
 using BreakerProtocol.UI.Settlement;
 using BreakerProtocol.World.Director;
 using BreakerProtocol.World.Economy;
@@ -24,12 +26,13 @@ namespace BreakerProtocol.Core
 	public enum GameState
 	{
 		MainMenu,         // 游戏主标题菜单
-		Hangar,           // 母港科研局与出击整备
+		FleetHangar,      // 母港机库选船出征 (TASK-43)
+		HangarMetaTech,   // 母港科研局 (Meta 科技树)
+		SandboxBay,       // 虚拟风洞测试靶场
 		SectorMap,        // DAG 航路分支跃迁星图
 		Combat,           // 战术实时空战
 		BlackMarket,      // 废土黑市交易终端
 		AnomalyDialogue,  // 深空随机叙事异象
-		RefitBay,         // 战场临时紧急改装
 		RunSettlement     // 战役胜败综合评分结算
 	}
 
@@ -50,10 +53,12 @@ namespace BreakerProtocol.Core
 
 		// UI 视图句柄容器
 		public MainMenuUI? MainMenuUI { get; set; }
+		public FleetHangarUI? FleetHangarUI { get; set; }
 		public SectorMapUI? MapUI { get; set; }
 		public BlackMarketShopUI? MarketUI { get; set; }
 		public SpaceEventDialogueUI? EventUI { get; set; }
 		public MetaTechTreeUI? MetaTechUI { get; set; }
+		public SandboxBayUI? SandboxUI { get; set; }
 		public RunSummaryUI? SummaryUI { get; set; }
 		public CombatHUD? CombatHUD { get; set; }
 
@@ -94,7 +99,6 @@ namespace BreakerProtocol.Core
 			switch (state)
 			{
 				case GameState.Combat:
-					// 离开战斗态时自动向磁盘备份战损现场
 					if (PlayerShip != null && CurrentSectorGraph != null)
 					{
 						SaveManager.Instance.SaveCurrentRun(PlayerShip, CurrentSectorGraph);
@@ -107,10 +111,12 @@ namespace BreakerProtocol.Core
 		{
 			// 1. UI 互斥显隐同步
 			if (MainMenuUI != null) MainMenuUI.Visible = (state == GameState.MainMenu);
+			if (FleetHangarUI != null) FleetHangarUI.Visible = (state == GameState.FleetHangar);
 			if (MapUI != null) MapUI.Visible = (state == GameState.SectorMap);
 			if (MarketUI != null) MarketUI.Visible = (state == GameState.BlackMarket);
 			if (EventUI != null) EventUI.Visible = (state == GameState.AnomalyDialogue);
-			if (MetaTechUI != null) MetaTechUI.Visible = (state == GameState.Hangar);
+			if (MetaTechUI != null) MetaTechUI.Visible = (state == GameState.HangarMetaTech);
+			if (SandboxUI != null) SandboxUI.Visible = (state == GameState.SandboxBay);
 			if (SummaryUI != null) SummaryUI.Visible = (state == GameState.RunSettlement);
 			if (CombatHUD != null) CombatHUD.Visible = (state == GameState.Combat);
 
@@ -118,7 +124,6 @@ namespace BreakerProtocol.Core
 			switch (state)
 			{
 				case GameState.SectorMap:
-					// 跃迁到星图时触发自动存盘
 					if (PlayerShip != null && CurrentSectorGraph != null)
 					{
 						SaveManager.Instance.SaveCurrentRun(PlayerShip, CurrentSectorGraph);
@@ -129,7 +134,7 @@ namespace BreakerProtocol.Core
 					if (PlayerShip != null) MarketUI?.Initialize(PlayerShip);
 					break;
 
-				case GameState.Hangar:
+				case GameState.HangarMetaTech:
 					SaveManager.Instance.LoadMeta();
 					break;
 			}
@@ -138,7 +143,7 @@ namespace BreakerProtocol.Core
 		}
 
 		/// <summary>
-		/// 开启一轮全新星区战役
+		/// 开启一轮全新星区战役 (根据玩家选定的战舰蓝图出征)
 		/// </summary>
 		public void StartNewRun(string initialBlueprintId = "bp_hf_m_anvil")
 		{

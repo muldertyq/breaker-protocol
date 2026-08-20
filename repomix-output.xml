@@ -51,6 +51,14 @@ core_data/
     bp_vs_l_singularity.json
     bp_vs_m_prism.json
     bp_vs_s_ghost.json
+  drops/
+    drop_tables.json
+  encounters/
+    encounter_pools.json
+  events/
+    ev_pioneer_derelict.json
+  markets/
+    market_config.json
   modules/
     bio_chitin/
       bc_arm_chitin_plate_2x2.json
@@ -100,6 +108,10 @@ core_data/
     logic_mixer.json
     logic_splitter.json
     mod_cryo_chamber.json
+  pacts/
+    pact_core_rules.json
+  techs/
+    tech_meta_tree.json
   mod_manifest.json
 mods/
   sample_player_mod/
@@ -146,6 +158,11 @@ Scenes/
     Test_Task36.tscn
     Test_Task37.tscn
     Test_Task38.tscn
+    Test_Task39.tscn
+    Test_Task40.tscn
+    Test_Task41.tscn
+    Test_Task42.tscn
+    Test_Task43.tscn
 Scripts/
   Audio/
     AudioManager.cs
@@ -204,18 +221,39 @@ Scripts/
   Core/
     DataManager.cs
     DataManager.cs.uid
+    GameStateManager.cs
+    GameStateManager.cs.uid
     GlobalMetrics.cs
     GlobalMetrics.cs.uid
+    SceneTransitionManager.cs
+    SceneTransitionManager.cs.uid
   Data/
     Models/
       BlueprintModels.cs
       BlueprintModels.cs.uid
+      CalamityPactModels.cs
+      CalamityPactModels.cs.uid
       DataModels.cs
       DataModels.cs.uid
+      DropTableModels.cs
+      DropTableModels.cs.uid
+      EncounterModels.cs
+      EncounterModels.cs.uid
+      MarketModels.cs
+      MarketModels.cs.uid
+      MetaTechModels.cs
+      MetaTechModels.cs.uid
       ModManifest.cs
       ModManifest.cs.uid
       PaletteModels.cs
       PaletteModels.cs.uid
+      SaveModels.cs
+      SaveModels.cs.uid
+      SpaceEventModels.cs
+      SpaceEventModels.cs.uid
+    Persistence/
+      SaveManager.cs
+      SaveManager.cs.uid
     Registries/
       Registry.cs
       Registry.cs.uid
@@ -376,6 +414,16 @@ Scripts/
     Test_Task37.cs.uid
     Test_Task38.cs
     Test_Task38.cs.uid
+    Test_Task39.cs
+    Test_Task39.cs.uid
+    Test_Task40.cs
+    Test_Task40.cs.uid
+    Test_Task41.cs
+    Test_Task41.cs.uid
+    Test_Task42.cs
+    Test_Task42.cs.uid
+    Test_Task43.cs
+    Test_Task43.cs.uid
     TestPlayerDummy.cs
     TestPlayerDummy.cs.uid
   UI/
@@ -388,9 +436,15 @@ Scripts/
     Events/
       SpaceEventDialogueUI.cs
       SpaceEventDialogueUI.cs.uid
+    Hangar/
+      FleetHangarUI.cs
+      FleetHangarUI.cs.uid
     Market/
       BlackMarketShopUI.cs
       BlackMarketShopUI.cs.uid
+    Menu/
+      MainMenuUI.cs
+      MainMenuUI.cs.uid
     Meta/
       MetaTechTreeUI.cs
       MetaTechTreeUI.cs.uid
@@ -411,9 +465,13 @@ Scripts/
     MathUtils.cs.uid
   World/
     Director/
+      EncounterDirector.cs
+      EncounterDirector.cs.uid
       GameDirector.cs
       GameDirector.cs.uid
     Economy/
+      LootDropService.cs
+      LootDropService.cs.uid
       PlayerEconomyManager.cs
       PlayerEconomyManager.cs.uid
       SalvageDropEntity.cs
@@ -421,8 +479,6 @@ Scripts/
     Events/
       SpaceEventDatabase.cs
       SpaceEventDatabase.cs.uid
-      SpaceEventModels.cs
-      SpaceEventModels.cs.uid
     Market/
       BlackMarketService.cs
       BlackMarketService.cs.uid
@@ -430,8 +486,8 @@ Scripts/
       MetaProgressionManager.cs
       MetaProgressionManager.cs.uid
     Pacts/
-      CalamityPactModels.cs
-      CalamityPactModels.cs.uid
+      CalamityPactManager.cs
+      CalamityPactManager.cs.uid
     Sandbox/
       SandboxBayManager.cs
       SandboxBayManager.cs.uid
@@ -460,6 +516,635 @@ project.godot
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="Scenes/Tests/Test_Task43.tscn">
+[gd_scene format=3 uid="uid://cd4enmemg8ffs"]
+
+[ext_resource type="Script" uid="uid://cyubmeepj4xon" path="res://Scripts/Test/Test_Task43.cs" id="1_ba2yu"]
+[ext_resource type="Script" uid="uid://c348cmajq8trh" path="res://Scripts/Test/BackgroundGrid.cs" id="2_knus8"]
+
+[node name="TestTask43" type="Node2D" unique_id=1012864892]
+script = ExtResource("1_ba2yu")
+
+[node name="BackgroundGrid" type="Node2D" parent="." unique_id=296710710]
+script = ExtResource("2_knus8")
+</file>
+
+<file path="Scripts/Test/Test_Task43.cs">
+using Godot;
+using BreakerProtocol.Camera;
+using BreakerProtocol.Combat.Effects;
+using BreakerProtocol.Combat.Projectiles;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Persistence;
+using BreakerProtocol.Ship;
+using BreakerProtocol.UI.CombatHUD;
+using BreakerProtocol.UI.Events;
+using BreakerProtocol.UI.Hangar;
+using BreakerProtocol.UI.Market;
+using BreakerProtocol.UI.Menu;
+using BreakerProtocol.UI.Meta;
+using BreakerProtocol.UI.Sandbox;
+using BreakerProtocol.UI.SectorMap;
+using BreakerProtocol.UI.Settlement;
+using BreakerProtocol.World.Director;
+using BreakerProtocol.World.Economy;
+using BreakerProtocol.World.Events;
+using BreakerProtocol.World.Sector;
+using BreakerProtocol.World.Settlement;
+
+namespace BreakerProtocol.Test
+{
+	/// <summary>
+	/// TASK-43 演练场：母港主菜单、选船出征与科研总装界面验证中枢
+	/// </summary>
+	public partial class Test_Task43 : Node2D
+	{
+		private ShipEntity _playerShip = null!;
+		private CombatCameraController _camera = null!;
+		private BulletManager _bulletManager = null!;
+		private JuiceManager _juice = null!;
+		private VfxManager _vfx = null!;
+		private SceneTransitionManager _transitionManager = null!;
+
+		// 全景 UI
+		private MainMenuUI _mainMenuUI = null!;
+		private FleetHangarUI _fleetHangarUI = null!;
+		private SectorMapUI _mapUI = null!;
+		private BlackMarketShopUI _marketUI = null!;
+		private SpaceEventDialogueUI _eventUI = null!;
+		private MetaTechTreeUI _metaTechUI = null!;
+		private SandboxBayUI _sandboxUI = null!;
+		private RunSummaryUI _summaryUI = null!;
+		private CombatHUD _combatHUD = null!;
+		private RichTextLabel _topBannerLabel = null!;
+
+		public override void _Ready()
+		{
+			_juice = new JuiceManager { Name = "JuiceManager" };
+			AddChild(_juice);
+
+			_vfx = new VfxManager { Name = "VfxManager" };
+			AddChild(_vfx);
+
+			_bulletManager = new BulletManager { Name = "BulletManager" };
+			AddChild(_bulletManager);
+
+			// 1. 初始化转场
+			_transitionManager = new SceneTransitionManager();
+			AddChild(_transitionManager);
+
+			// 2. 初始化战舰与摄像机
+			PlayerEconomyManager.Instance.Reset(initialScraps: 200, initialCores: 1);
+			_playerShip = new ShipEntity
+			{
+				Name = "PlayerShip_T43",
+				Position = Vector2.Zero
+			};
+			_playerShip.AddToGroup("Player");
+			_playerShip.AddToGroup("Ship");
+			AddChild(_playerShip);
+
+			if (DataManager.Instance.Blueprints.TryGet("bp_hf_m_anvil", out var bp))
+			{
+				ShipBlueprintLoader.ApplyBlueprint(_playerShip, bp!);
+			}
+
+			_camera = new CombatCameraController { TargetShip = _playerShip };
+			AddChild(_camera);
+			_juice.BindCamera(_camera);
+
+			// 3. 构建全景 UI 并注入 GameStateManager
+			CreateAllUIs();
+			BindGameStateManager();
+
+			// 4. 初始切入主菜单
+			GameStateManager.Instance.SwitchState(GameState.MainMenu, false);
+		}
+
+		private void CreateAllUIs()
+		{
+			var canvas = new CanvasLayer { Layer = 10 };
+			AddChild(canvas);
+
+			_combatHUD = new CombatHUD { TargetShip = _playerShip };
+			_combatHUD.Visible = false;
+			canvas.AddChild(_combatHUD);
+
+			_mapUI = new SectorMapUI();
+			_mapUI.OnNodeSelected += HandleNodeSelectedOnMap;
+			_mapUI.Visible = false;
+			canvas.AddChild(_mapUI);
+
+			_marketUI = new BlackMarketShopUI();
+			_marketUI.Visible = false;
+			canvas.AddChild(_marketUI);
+
+			_eventUI = new SpaceEventDialogueUI();
+			_eventUI.OnEventResolved += (outcome) => GameStateManager.Instance.SwitchState(GameState.SectorMap);
+			_eventUI.Visible = false;
+			canvas.AddChild(_eventUI);
+
+			_metaTechUI = new MetaTechTreeUI();
+			_metaTechUI.Visible = false;
+			canvas.AddChild(_metaTechUI);
+
+			_sandboxUI = new SandboxBayUI();
+			_sandboxUI.Visible = false;
+			canvas.AddChild(_sandboxUI);
+
+			_summaryUI = new RunSummaryUI();
+			_summaryUI.OnNavigateToMetaTech += () => GameStateManager.Instance.SwitchState(GameState.HangarMetaTech);
+			_summaryUI.OnStartNewRun += () => GameStateManager.Instance.SwitchState(GameState.FleetHangar);
+			_summaryUI.Visible = false;
+			canvas.AddChild(_summaryUI);
+
+			_fleetHangarUI = new FleetHangarUI();
+			_fleetHangarUI.OnShipSelectedAndEngage += (blueprintId) => GameStateManager.Instance.StartNewRun(blueprintId);
+			_fleetHangarUI.OnBackToMainMenu += () => GameStateManager.Instance.SwitchState(GameState.MainMenu);
+			_fleetHangarUI.Visible = false;
+			canvas.AddChild(_fleetHangarUI);
+
+			_mainMenuUI = new MainMenuUI();
+			_mainMenuUI.OnNewRunRequested += () => GameStateManager.Instance.SwitchState(GameState.FleetHangar);
+			_mainMenuUI.OnContinueRunRequested += () => GameStateManager.Instance.ContinueSavedRun();
+			_mainMenuUI.OnHangarRequested += () => GameStateManager.Instance.SwitchState(GameState.HangarMetaTech);
+			_mainMenuUI.OnSandboxRequested += () => GameStateManager.Instance.SwitchState(GameState.SandboxBay);
+			canvas.AddChild(_mainMenuUI);
+
+			_topBannerLabel = new RichTextLabel
+			{
+				Position = new Vector2(20, 10),
+				Size = new Vector2(1240, 60),
+				BbcodeEnabled = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			_topBannerLabel.AddThemeFontSizeOverride("normal_font_size", 13);
+			canvas.AddChild(_topBannerLabel);
+		}
+
+		private void BindGameStateManager()
+		{
+			var gsm = GameStateManager.Instance;
+			gsm.PlayerShip = _playerShip;
+			gsm.MainMenuUI = _mainMenuUI;
+			gsm.FleetHangarUI = _fleetHangarUI;
+			gsm.MapUI = _mapUI;
+			gsm.MarketUI = _marketUI;
+			gsm.EventUI = _eventUI;
+			gsm.MetaTechUI = _metaTechUI;
+			gsm.SandboxUI = _sandboxUI;
+			gsm.SummaryUI = _summaryUI;
+			gsm.CombatHUD = _combatHUD;
+		}
+
+		private void HandleNodeSelectedOnMap(SectorNode node)
+		{
+			switch (node.Type)
+			{
+				case SectorNodeType.Market:
+					GameStateManager.Instance.SwitchState(GameState.BlackMarket, true, "✦ 对接废土黑市空间站 ✦");
+					break;
+				case SectorNodeType.Event:
+					_eventUI.OpenEvent(SpaceEventDatabase.GetRandomEvent(), _playerShip);
+					GameStateManager.Instance.SwitchState(GameState.AnomalyDialogue, true, "✦ 扫描到深空异象信标 ✦");
+					break;
+				default:
+					GameStateManager.Instance.SwitchState(GameState.Combat, true, "✦ 遭遇敌方巡逻舰队 ✦");
+					break;
+			}
+		}
+
+		public override void _UnhandledInput(InputEvent @event)
+		{
+			if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				var gsm = GameStateManager.Instance;
+
+				if (ek.Keycode == Key.Escape)
+				{
+					if (gsm.CurrentState == GameState.MainMenu)
+						gsm.SwitchState(GameState.SectorMap);
+					else
+						gsm.SwitchState(GameState.MainMenu);
+				}
+				else if (ek.Keycode == Key.Key1)
+				{
+					gsm.SwitchState(GameState.FleetHangar);
+				}
+				else if (ek.Keycode == Key.Key2)
+				{
+					gsm.SwitchState(GameState.HangarMetaTech);
+				}
+				else if (ek.Keycode == Key.Key3)
+				{
+					gsm.SwitchState(GameState.SandboxBay);
+				}
+				else if (ek.Keycode == Key.M)
+				{
+					gsm.SwitchState(GameState.SectorMap);
+				}
+			}
+		}
+
+		public override void _Process(double delta)
+		{
+			if (Godot.Input.IsMouseButtonPressed(MouseButton.Left) && GameStateManager.Instance.CurrentState == GameState.Combat)
+			{
+				foreach (var weaponId in _playerShip.Pulses.WeaponBuffers.Keys)
+				{
+					_playerShip.Pulses.TriggerWeaponFire(weaponId, out _);
+				}
+			}
+
+			UpdateBanner();
+		}
+
+		private void UpdateBanner()
+		{
+			var gsm = GameStateManager.Instance;
+			var eco = PlayerEconomyManager.Instance;
+
+			string stateName = gsm.CurrentState switch
+			{
+				GameState.MainMenu        => "[color=cyan]主标题菜单 (MainMenu)[/color]",
+				GameState.FleetHangar     => "[color=gold]选船机库 (FleetHangar)[/color]",
+				GameState.HangarMetaTech  => "[color=yellow]母港科研局 (MetaTech)[/color]",
+				GameState.SandboxBay      => "[color=magenta]风洞测试场 (SandboxBay)[/color]",
+				GameState.SectorMap       => "[color=lime]星区跃迁星图 (SectorMap)[/color]",
+				GameState.Combat          => "[color=crimson]战术空战模式 (Combat)[/color]",
+				_                         => "[color=white]其他[/color]"
+			};
+
+			_topBannerLabel.Text =
+				$"[b][color=yellow]【TASK-43 选船出征与母港机库演练场】[/color][/b] 当前状态: {stateName} | " +
+				$"当前战舰构件数: [color=cyan]{_playerShip.Grid.Modules.Count}[/color] | " +
+				$"资产: [color=yellow]{eco.Scraps} ⚙[/color] [color=cyan]{eco.ComputeCores} 💠[/color]\n" +
+				$"[color=gray][快捷流转]: [1] 选船机库 | [2] 母港科研 | [3] 虚拟风洞 | [M] 跃迁星图 | [ESC] 主菜单[/color]";
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Test/Test_Task43.cs.uid">
+uid://cyubmeepj4xon
+</file>
+
+<file path="Scripts/UI/Hangar/FleetHangarUI.cs">
+using System;
+using System.Collections.Generic;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
+using BreakerProtocol.World.Meta;
+
+namespace BreakerProtocol.UI.Hangar
+{
+	/// <summary>
+	/// 战舰出征选择配置元数据
+	/// </summary>
+	public class ShipOptionData
+	{
+		public string BlueprintId { get; set; } = string.Empty;
+		public string Name { get; set; } = string.Empty;
+		public string FactionName { get; set; } = string.Empty;
+		public string RoleDesc { get; set; } = string.Empty;
+		public Color ThemeColor { get; set; } = Colors.Cyan;
+		public string TraitDescription { get; set; } = string.Empty;
+		public string PrimaryWeapons { get; set; } = string.Empty;
+	}
+
+	/// <summary>
+	/// 母港出征选船机库界面 (全息战舰预览、性能遥测与出征总装)
+	/// </summary>
+	public partial class FleetHangarUI : Control
+	{
+		public event Action<string>? OnShipSelectedAndEngage;
+		public event Action? OnBackToMainMenu;
+
+		private readonly List<ShipOptionData> _availableShips = new();
+		private int _selectedIndex = 0;
+		private float _animTimer = 0.0f;
+		private Vector2 _currentMousePos = Vector2.Zero;
+
+		public override void _Ready()
+		{
+			SetAnchorsPreset(LayoutPreset.FullRect);
+			GrowHorizontal = GrowDirection.Both;
+			GrowVertical = GrowDirection.Both;
+			MouseFilter = MouseFilterEnum.Stop;
+
+			Vector2 vpSize = GetViewportRect().Size;
+			CustomMinimumSize = vpSize;
+			Size = vpSize;
+
+			InitializeShipRoster();
+		}
+
+		private void InitializeShipRoster()
+		{
+			_availableShips.Clear();
+
+			// 1. 重工联合 (Heavy Foundry) - 铁砧级中型巡洋舰
+			_availableShips.Add(new ShipOptionData
+			{
+				BlueprintId = "bp_hf_m_anvil",
+				Name = "【铁砧级】中型装甲巡洋舰",
+				FactionName = "重工联合 (Heavy Foundry)",
+				RoleDesc = "重甲突击 / 动能穿甲 / 预应力战术爆甲",
+				ThemeColor = new Color(1.0f, 0.55f, 0.2f),
+				TraitDescription = "• 装甲基础抗性极高，前倾角装甲极易引发物理跳弹\n" +
+								   "• 搭载重型电磁轨道炮与大口径加特林速射炮阵列\n" +
+								   "• 专属特技 [Q/E]：战术爆甲化作 24 枚破片散弹清屏",
+				PrimaryWeapons = "重型磁轨炮 + 旋转加特林机炮"
+			});
+
+			// 2. 虚空财团 (Void Syndicate) - 棱镜级中型截击舰
+			_availableShips.Add(new ShipOptionData
+			{
+				BlueprintId = "bp_vs_m_prism",
+				Name = "【棱镜级】中型相位截击舰",
+				FactionName = "虚空财团 (Void Syndicate)",
+				RoleDesc = "超频能量 / 光子分束 / 引力坍缩控制",
+				ThemeColor = new Color(0.2f, 0.85f, 1.0f),
+				TraitDescription = "• 极低船体质量与极高回转推重比，机动性能卓绝\n" +
+								   "• 搭载相位聚能激光束与分光三棱镜流水线\n" +
+								   "• 专属特技 [Q/E]：引爆侧翼生成微型引力坍缩黑洞聚怪",
+				PrimaryWeapons = "相位激光脉冲 + 光子分束修饰舱"
+			});
+
+			// 3. 深空生化 (Bio Chitin) - 甲壳级中型甲壳舰
+			_availableShips.Add(new ShipOptionData
+			{
+				BlueprintId = "bp_bc_m_carapace",
+				Name = "【甲壳级】中型几丁质重母舰",
+				FactionName = "深空生化帮 (Bio Chitin)",
+				RoleDesc = "生化酸蚀 / 几丁质自愈 / 孢子蜂群",
+				ThemeColor = new Color(0.45f, 0.95f, 0.35f),
+				TraitDescription = "• 几丁质外骨骼受创后具备缓慢自我生物代谢再生能力\n" +
+								   "• 搭载高腐蚀酸液喷射器与自动引导孢子发射器\n" +
+								   "• 专属特技 [Q/E]：爆破释放大范围生化强酸毒雾并孵化飞虫",
+				PrimaryWeapons = "强酸喷射器 + 追踪孢子发射器"
+			});
+		}
+
+		public override void _Process(double delta)
+		{
+			if (!Visible) return;
+
+			_animTimer += (float)delta * 3.0f;
+
+			Vector2 vpSize = GetViewportRect().Size;
+			if (vpSize.X > 100 && vpSize.Y > 100 && Size != vpSize)
+			{
+				Size = vpSize;
+				CustomMinimumSize = vpSize;
+			}
+
+			_currentMousePos = GetLocalMousePosition();
+			QueueRedraw();
+		}
+
+		public override void _GuiInput(InputEvent @event)
+		{
+			if (!Visible) return;
+			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+			{
+				HandleClick(_currentMousePos);
+				AcceptEvent();
+			}
+		}
+
+		public override void _UnhandledInput(InputEvent @event)
+		{
+			if (!Visible) return;
+			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+			{
+				HandleClick(_currentMousePos);
+			}
+			else if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				if (ek.Keycode == Key.A || ek.Keycode == Key.Left)
+				{
+					_selectedIndex = (_selectedIndex - 1 + _availableShips.Count) % _availableShips.Count;
+				}
+				else if (ek.Keycode == Key.D || ek.Keycode == Key.Right)
+				{
+					_selectedIndex = (_selectedIndex + 1) % _availableShips.Count;
+				}
+				else if (ek.Keycode == Key.Enter || ek.Keycode == Key.Space)
+				{
+					ConfirmEngage();
+				}
+				else if (ek.Keycode == Key.Escape)
+				{
+					OnBackToMainMenu?.Invoke();
+				}
+			}
+		}
+
+		private void HandleClick(Vector2 clickPos)
+		{
+			Vector2 vpSize = GetViewportRect().Size;
+
+			// 左右切换选船箭头
+			Rect2 leftArrowRect = new(60, vpSize.Y * 0.45f - 30, 60, 60);
+			Rect2 rightArrowRect = new(vpSize.X * 0.48f - 70, vpSize.Y * 0.45f - 30, 60, 60);
+
+			if (leftArrowRect.HasPoint(clickPos))
+			{
+				_selectedIndex = (_selectedIndex - 1 + _availableShips.Count) % _availableShips.Count;
+				return;
+			}
+			if (rightArrowRect.HasPoint(clickPos))
+			{
+				_selectedIndex = (_selectedIndex + 1) % _availableShips.Count;
+				return;
+			}
+
+			// 出征按钮
+			Rect2 launchBtnRect = GetLaunchButtonRect();
+			if (launchBtnRect.HasPoint(clickPos))
+			{
+				ConfirmEngage();
+				return;
+			}
+
+			// 返回按钮
+			Rect2 backBtnRect = GetBackButtonRect();
+			if (backBtnRect.HasPoint(clickPos))
+			{
+				OnBackToMainMenu?.Invoke();
+				return;
+			}
+		}
+
+		private void ConfirmEngage()
+		{
+			var chosen = _availableShips[_selectedIndex];
+			OnShipSelectedAndEngage?.Invoke(chosen.BlueprintId);
+		}
+
+		private Rect2 GetLaunchButtonRect()
+		{
+			Vector2 vpSize = GetViewportRect().Size;
+			return new Rect2(vpSize.X - 380, vpSize.Y - 110, 320, 56);
+		}
+
+		private Rect2 GetBackButtonRect()
+		{
+			Vector2 vpSize = GetViewportRect().Size;
+			return new Rect2(60, vpSize.Y - 110, 200, 56);
+		}
+
+		public override void _Draw()
+		{
+			if (!Visible || _availableShips.Count == 0) return;
+
+			var font = ThemeDB.FallbackFont;
+			Vector2 vpSize = GetViewportRect().Size;
+			var ship = _availableShips[_selectedIndex];
+
+			// 1. 全屏母港停机坪深空背景底板
+			DrawRect(new Rect2(Vector2.Zero, vpSize), new Color(0.02f, 0.04f, 0.08f, 0.96f));
+
+			// 2. 标头栏
+			DrawString(font, new Vector2(60, 50), "✦ 母港出征战备机库 · 原型战舰总装 ✦ FLEET HANGAR NEXUS", HorizontalAlignment.Left, -1, 18, Colors.Cyan);
+			DrawString(font, new Vector2(vpSize.X - 320, 50), $"已解锁研发碎片: {MetaProgressionManager.Instance.DataFragments} 💾", HorizontalAlignment.Right, -1, 14, Colors.Gold);
+			DrawLine(new Vector2(50, 68), new Vector2(vpSize.X - 50, 68), new Color(0.2f, 0.4f, 0.6f, 0.5f), 1.5f);
+
+			// 3. 左侧：战舰全息线框投影展示舱 (Schematic Box)
+			Rect2 displayBox = new(60, 95, vpSize.X * 0.44f, vpSize.Y * 0.66f);
+			DrawRect(displayBox, new Color(0.04f, 0.08f, 0.14f, 0.85f));
+			DrawRect(displayBox, ship.ThemeColor, false, 2.0f);
+
+			// 绘制全息扫描网格线
+			for (float y = displayBox.Position.Y + 20; y < displayBox.End.Y; y += 30)
+			{
+				DrawLine(new Vector2(displayBox.Position.X, y), new Vector2(displayBox.End.X, y), new Color(ship.ThemeColor.R, ship.ThemeColor.G, ship.ThemeColor.B, 0.08f), 1.0f);
+			}
+
+			// 绘制战舰蓝图线框示意图 (根据 Blueprint 真实网格渲染)
+			DrawShipBlueprintSchematic(displayBox, ship.BlueprintId, ship.ThemeColor);
+
+			// 左右切换箭头
+			Rect2 leftArrowRect = new(displayBox.Position.X + 15, displayBox.Position.Y + (displayBox.Size.Y * 0.5f) - 25, 45, 50);
+			Rect2 rightArrowRect = new(displayBox.End.X - 60, displayBox.Position.Y + (displayBox.Size.Y * 0.5f) - 25, 45, 50);
+			
+			bool isLeftHover = leftArrowRect.HasPoint(_currentMousePos);
+			bool isRightHover = rightArrowRect.HasPoint(_currentMousePos);
+
+			DrawRect(leftArrowRect, isLeftHover ? new Color(0.2f, 0.4f, 0.6f, 0.8f) : new Color(0.1f, 0.15f, 0.25f, 0.6f));
+			DrawRect(leftArrowRect, isLeftHover ? Colors.White : Colors.Cyan, false, 1.5f);
+			DrawString(font, leftArrowRect.Position + new Vector2(14, 32), "◀", HorizontalAlignment.Center, -1, 18, isLeftHover ? Colors.Gold : Colors.White);
+
+			DrawRect(rightArrowRect, isRightHover ? new Color(0.2f, 0.4f, 0.6f, 0.8f) : new Color(0.1f, 0.15f, 0.25f, 0.6f));
+			DrawRect(rightArrowRect, isRightHover ? Colors.White : Colors.Cyan, false, 1.5f);
+			DrawString(font, rightArrowRect.Position + new Vector2(14, 32), "▶", HorizontalAlignment.Center, -1, 18, isRightHover ? Colors.Gold : Colors.White);
+
+			// 4. 右侧：战舰详细战术遥测与派系特权卡片
+			float rightX = displayBox.End.X + 40;
+			float rightW = vpSize.X - rightX - 60;
+			Rect2 detailBox = new(rightX, 95, rightW, vpSize.Y * 0.66f);
+			DrawRect(detailBox, new Color(0.03f, 0.06f, 0.10f, 0.90f));
+			DrawRect(detailBox, new Color(0.3f, 0.5f, 0.7f, 0.5f), false, 1.5f);
+
+			// 标题与派系
+			DrawString(font, detailBox.Position + new Vector2(25, 42), ship.Name, HorizontalAlignment.Left, -1, 22, Colors.Gold);
+			DrawString(font, detailBox.Position + new Vector2(25, 74), $"势力所属: {ship.FactionName} | 定位: {ship.RoleDesc}", HorizontalAlignment.Left, -1, 13, ship.ThemeColor);
+			DrawLine(detailBox.Position + new Vector2(20, 90), detailBox.Position + new Vector2(detailBox.Size.X - 20, 90), new Color(0.3f, 0.5f, 0.7f, 0.4f), 1.0f);
+
+			// 基础属性解算
+			int moduleCount = 0;
+			float totalHp = 0.0f;
+			float totalMass = 0.0f;
+			if (DataManager.Instance.Blueprints.TryGet(ship.BlueprintId, out var bp) && bp != null)
+			{
+				moduleCount = bp.Modules.Count;
+				foreach (var m in bp.Modules)
+				{
+					if (DataManager.Instance.Modules.TryGet(m.ModuleId, out var mDef) && mDef != null)
+					{
+						totalHp += mDef.BaseHp;
+						totalMass += mDef.Mass;
+					}
+				}
+			}
+
+			// 属性遥测仪表
+			float attrY = detailBox.Position.Y + 125;
+			DrawAttributeBar(font, detailBox.Position.X + 25, attrY, "舰体耐久总量", $"{totalHp:F0} HP", totalHp / 1800.0f, Colors.LimeGreen);
+			DrawAttributeBar(font, detailBox.Position.X + 25, attrY + 36, "全舰整备质量", $"{totalMass:F1} 吨", totalMass / 60.0f, Colors.Yellow);
+			DrawAttributeBar(font, detailBox.Position.X + 25, attrY + 72, "预装构件规模", $"{moduleCount} 模块", moduleCount / 20.0f, Colors.Cyan);
+			DrawAttributeBar(font, detailBox.Position.X + 25, attrY + 108, "武器系统配置", ship.PrimaryWeapons, 1.0f, Colors.Orange);
+
+			// 派系专属特技
+			float traitY = attrY + 160;
+			DrawString(font, new Vector2(detailBox.Position.X + 25, traitY), "【 战术特权与核心机制 】", HorizontalAlignment.Left, -1, 14, Colors.Cyan);
+			DrawString(font, new Vector2(detailBox.Position.X + 25, traitY + 28), ship.TraitDescription, HorizontalAlignment.Left, (int)detailBox.Size.X - 50, 13, Colors.White);
+
+			// 5. 底部操作按钮
+			Rect2 backBtn = GetBackButtonRect();
+			bool isBackHover = backBtn.HasPoint(_currentMousePos);
+			DrawRect(backBtn, isBackHover ? new Color(0.4f, 0.15f, 0.15f) : new Color(0.18f, 0.08f, 0.08f));
+			DrawRect(backBtn, isBackHover ? Colors.White : Colors.OrangeRed, false, 1.5f);
+			DrawString(font, backBtn.Position + new Vector2(40, 34), "◀ 返回主菜单", HorizontalAlignment.Center, -1, 14, Colors.White);
+
+			Rect2 launchBtn = GetLaunchButtonRect();
+			bool isLaunchHover = launchBtn.HasPoint(_currentMousePos);
+			DrawRect(launchBtn, isLaunchHover ? new Color(0.15f, 0.60f, 0.45f) : new Color(0.08f, 0.35f, 0.25f));
+			DrawRect(launchBtn, isLaunchHover ? Colors.White : Colors.LimeGreen, false, 2.0f);
+			DrawString(font, launchBtn.Position + new Vector2(45, 34), "🚀 选定战舰 · 启航出征", HorizontalAlignment.Center, -1, 16, Colors.Gold);
+		}
+
+		private void DrawShipBlueprintSchematic(Rect2 box, string blueprintId, Color themeColor)
+		{
+			if (!DataManager.Instance.Blueprints.TryGet(blueprintId, out var bp) || bp == null) return;
+
+			Vector2 center = box.Position + box.Size * 0.5f;
+			float cellSize = 18.0f;
+
+			foreach (var mod in bp.Modules)
+			{
+				if (!DataManager.Instance.Modules.TryGet(mod.ModuleId, out var def) || def == null) continue;
+
+				Vector2 pos = center + new Vector2(mod.GridX * cellSize, mod.GridY * cellSize);
+				Vector2 size = new(def.Width * cellSize - 2, def.Height * cellSize - 2);
+
+				Color modColor = def.Category switch
+				{
+					"PowerSource" => Colors.Gold,
+					"Weapon"      => Colors.Crimson,
+					"Thruster"    => Colors.DodgerBlue,
+					"Armor"       => Colors.DimGray,
+					_             => themeColor
+				};
+
+				DrawRect(new Rect2(pos, size), new Color(modColor.R, modColor.G, modColor.B, 0.45f));
+				DrawRect(new Rect2(pos, size), modColor, false, 1.2f);
+			}
+		}
+
+		private void DrawAttributeBar(Font font, float x, float y, string title, string valStr, float ratio, Color barColor)
+		{
+			DrawString(font, new Vector2(x, y + 14), title, HorizontalAlignment.Left, -1, 12, Colors.LightGray);
+			DrawString(font, new Vector2(x + 110, y + 14), valStr, HorizontalAlignment.Left, -1, 12, Colors.White);
+
+			float barX = x + 260;
+			float barW = 180.0f;
+			float barH = 10.0f;
+
+			DrawRect(new Rect2(barX, y + 4, barW, barH), new Color(0.1f, 0.15f, 0.2f, 0.8f));
+			DrawRect(new Rect2(barX, y + 4, barW * Mathf.Clamp(ratio, 0.05f, 1.0f), barH), barColor);
+			DrawRect(new Rect2(barX, y + 4, barW, barH), new Color(0.4f, 0.5f, 0.6f, 0.5f), false, 1.0f);
+		}
+	}
+}
+</file>
+
+<file path="Scripts/UI/Hangar/FleetHangarUI.cs.uid">
+uid://ccsa0odqmher2
+</file>
 
 <file path="core_data/blueprints/bp_bc_l_leviathan.json">
 {
@@ -657,6 +1342,200 @@ This section contains the contents of the repository's files.
   "wires": [
 	{ "sourceGridX": 0, "sourceGridY": 0, "targetGridX": 0, "targetGridY": -1 }
   ]
+}
+</file>
+
+<file path="core_data/drops/drop_tables.json">
+{
+  "dropTables": [
+	{
+	  "tableId": "drop_asteroid_standard",
+	  "displayName": "标准矿质小行星掉落池",
+	  "minScraps": 15,
+	  "maxScraps": 35,
+	  "coreDropChance": 0.0,
+	  "entries": [
+		{ "moduleId": "", "weight": 70, "dropType": "None" },
+		{ "moduleId": "hf_arm_plate_2x2", "weight": 20, "dropType": "Module" },
+		{ "moduleId": "bc_arm_chitin_plate_2x2", "weight": 10, "dropType": "Module" }
+	  ]
+	},
+	{
+	  "tableId": "drop_enemy_light",
+	  "displayName": "轻型先锋战机掉落池",
+	  "minScraps": 30,
+	  "maxScraps": 60,
+	  "coreDropChance": 0.05,
+	  "entries": [
+		{ "moduleId": "", "weight": 50, "dropType": "None" },
+		{ "moduleId": "hf_eng_rcs_heavy", "weight": 20, "dropType": "Module" },
+		{ "moduleId": "vs_eng_vector_rcs_1x1", "weight": 15, "dropType": "Module" },
+		{ "moduleId": "hf_log_jumper", "weight": 15, "dropType": "Module" }
+	  ]
+	},
+	{
+	  "tableId": "drop_enemy_elite",
+	  "displayName": "精英巡洋旗舰掉落池",
+	  "minScraps": 120,
+	  "maxScraps": 220,
+	  "coreDropChance": 0.65,
+	  "entries": [
+		{ "moduleId": "hf_wep_railgun_h", "weight": 25, "dropType": "Module" },
+		{ "moduleId": "vs_wep_phase_laser_m", "weight": 25, "dropType": "Module" },
+		{ "moduleId": "bc_wep_spore_launcher_m", "weight": 25, "dropType": "Module" },
+		{ "moduleId": "hf_mod_accelerator", "weight": 15, "dropType": "Module" },
+		{ "moduleId": "vs_mod_prism_splitter", "weight": 10, "dropType": "Module" }
+	  ]
+	},
+	{
+	  "tableId": "drop_boss_titan",
+	  "displayName": "泰坦要塞 Boss 终极掉落池",
+	  "minScraps": 400,
+	  "maxScraps": 600,
+	  "coreDropChance": 1.0,
+	  "entries": [
+		{ "moduleId": "vs_wep_tachyon_lance_h", "weight": 35, "dropType": "Module" },
+		{ "moduleId": "hf_wep_plasma_mortar", "weight": 35, "dropType": "Module" },
+		{ "moduleId": "vs_source_singularity_3x2", "weight": 30, "dropType": "Module" }
+	  ]
+	}
+  ]
+}
+</file>
+
+<file path="core_data/encounters/encounter_pools.json">
+{
+  "encounters": [
+	{
+	  "encounterId": "enc_combat_patrol",
+	  "displayName": "常规先锋巡逻队",
+	  "category": "Combat",
+	  "difficultyRating": 1,
+	  "ships": [
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Scout", "spawnOffset": { "x": -250.0, "y": -150.0 } },
+		{ "blueprintId": "bp_bc_s_leech", "role": "Scout", "spawnOffset": { "x": 250.0, "y": 150.0 } }
+	  ]
+	},
+	{
+	  "encounterId": "enc_combat_strike_group",
+	  "displayName": "重工联合突击小队",
+	  "category": "Combat",
+	  "difficultyRating": 2,
+	  "ships": [
+		{ "blueprintId": "bp_hf_m_anvil", "role": "Leader", "spawnOffset": { "x": 0.0, "y": -300.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": -200.0, "y": -400.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": 200.0, "y": -400.0 } }
+	  ]
+	},
+	{
+	  "encounterId": "enc_elite_syndicate_duo",
+	  "displayName": "虚空枢纽双子刺客",
+	  "category": "Elite",
+	  "difficultyRating": 3,
+	  "ships": [
+		{ "blueprintId": "bp_vs_m_prism", "role": "Elite", "spawnOffset": { "x": -350.0, "y": -200.0 } },
+		{ "blueprintId": "bp_vs_m_prism", "role": "Elite", "spawnOffset": { "x": 350.0, "y": -200.0 } }
+	  ]
+	},
+	{
+	  "encounterId": "enc_boss_titan_citadel",
+	  "displayName": "泰坦熔炉旗舰决战",
+	  "category": "Boss",
+	  "difficultyRating": 5,
+	  "ships": [
+		{ "blueprintId": "bp_hf_l_ironclad", "role": "Boss", "spawnOffset": { "x": 0.0, "y": -500.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": -400.0, "y": -600.0 } },
+		{ "blueprintId": "bp_hf_s_hammerhead", "role": "Escort", "spawnOffset": { "x": 400.0, "y": -600.0 } }
+	  ]
+	}
+  ]
+}
+</file>
+
+<file path="core_data/events/ev_pioneer_derelict.json">
+{
+  "id": "ev_pioneer_derelict",
+  "title": "【异象】废弃的先驱者科研船",
+  "factionTag": "古代科技遗迹",
+  "themeColorHex": "#59D9F2",
+  "description": "雷达在一片碎石带中捕获到微弱的求救信标。一艘隶属于旧时代的先驱者级科研船在真空中静默漂流，舰桥外壳已被等离子烧蚀，但其主动力舱仍有微弱的能量读数。",
+  "choices": [
+	{
+	  "choiceText": "强行黑入主服务器：尝试逆向破译算力核心与蓝图数据",
+	  "requiredConditionTag": "[高风险 65% 成功率]",
+	  "requiredScraps": 0,
+	  "requiredCores": 0,
+	  "successRate": 0.65,
+	  "successOutcome": {
+		"type": "GainCurrency",
+		"isSuccess": true,
+		"scrapDelta": 120,
+		"coreDelta": 1,
+		"repairRatio": 0.0,
+		"damageAmount": 0.0,
+		"resultLog": "破译成功！主机未损毁的数据阵列中提取出 1 颗【算力核心】和 120 废料！"
+	  },
+	  "failureOutcome": {
+		"type": "DamageModule",
+		"isSuccess": false,
+		"scrapDelta": 0,
+		"coreDelta": 0,
+		"repairRatio": 0.0,
+		"damageAmount": 60.0,
+		"resultLog": "触发了反入侵防御电涌！全舰电子系统过载，外部构件受到 60 点电涌损伤！"
+	  }
+	},
+	{
+	  "choiceText": "派工程无人机切割外装甲板：稳妥搜刮金属废料",
+	  "requiredConditionTag": "",
+	  "requiredScraps": 0,
+	  "requiredCores": 0,
+	  "successRate": 1.0,
+	  "successOutcome": {
+		"type": "GainCurrency",
+		"isSuccess": true,
+		"scrapDelta": 80,
+		"coreDelta": 0,
+		"repairRatio": 0.0,
+		"damageAmount": 0.0,
+		"resultLog": "无人机安全回收了 80 单位的高纯度装甲废料。"
+	  }
+	},
+	{
+	  "choiceText": "忽视漂流舰，保持航向离开",
+	  "requiredConditionTag": "",
+	  "requiredScraps": 0,
+	  "requiredCores": 0,
+	  "successRate": 1.0,
+	  "successOutcome": {
+		"type": "GainCurrency",
+		"isSuccess": true,
+		"scrapDelta": 0,
+		"coreDelta": 0,
+		"repairRatio": 0.0,
+		"damageAmount": 0.0,
+		"resultLog": "你选择不冒任何未知风险，战舰平稳加速驶离了碎片区。"
+	  }
+	}
+  ]
+}
+</file>
+
+<file path="core_data/markets/market_config.json">
+{
+  "defaultStockCount": 5,
+  "scrapResellRate": 0.60,
+  "fieldRepairBaseCost": 100,
+  "ablativeResetCost": 75,
+  "stockRerollCost": 30,
+  "categoryBasePrices": {
+	"Weapon": 140,
+	"Thruster": 90,
+	"PowerSource": 180,
+	"Modifier": 120,
+	"Logic": 80,
+	"Armor": 60
+  }
 }
 </file>
 
@@ -1711,6 +2590,102 @@ This section contains the contents of the repository's files.
 }
 </file>
 
+<file path="core_data/pacts/pact_core_rules.json">
+{
+  "pacts": [
+	{
+	  "id": "pact_heat_surge",
+	  "title": "【熔火过载协议】",
+	  "penalty": "ThermalOverload",
+	  "reward": "HyperPulse",
+	  "scrapBonusMultiplier": 0.8,
+	  "themeColor": "#FF4500",
+	  "description": "强制超频反应堆以提升脉冲速度，但系统散热受阻，发热量激增。"
+	},
+	{
+	  "id": "pact_glass_cannon",
+	  "title": "【薄甲碎刃契约】",
+	  "penalty": "FragileHull",
+	  "reward": "CriticalOvercharge",
+	  "scrapBonusMultiplier": 1.0,
+	  "themeColor": "#00BFFF",
+	  "description": "剥离外部厚重装甲以搭载高能暴击矩阵，装甲基础抗性大幅削弱。"
+	},
+	{
+	  "id": "pact_gravity_curse",
+	  "title": "【重力牢笼诅咒】",
+	  "penalty": "HighInertia",
+	  "reward": "ScrapSurge",
+	  "scrapBonusMultiplier": 1.5,
+	  "themeColor": "#9370DB",
+	  "description": "引力常数异变导致战舰惯性质量骤增，但战利品磁吸打捞产出翻倍。"
+	}
+  ]
+}
+</file>
+
+<file path="core_data/techs/tech_meta_tree.json">
+{
+  "techNodes": [
+	{
+	  "id": "tech_starting_scraps_1",
+	  "name": "初期补给信贷 I",
+	  "category": "Economy",
+	  "tier": 1,
+	  "coreCost": 1,
+	  "description": "初始出击时随舰携带的金属废料储备增加 +150 单位。",
+	  "prerequisites": [],
+	  "statModifier": "StartingScraps",
+	  "modifierValue": 150.0
+	},
+	{
+	  "id": "tech_starting_scraps_2",
+	  "name": "初期补给信贷 II",
+	  "category": "Economy",
+	  "tier": 2,
+	  "coreCost": 2,
+	  "description": "初始出击时随舰携带的金属废料储备额外增加 +250 单位。",
+	  "prerequisites": ["tech_starting_scraps_1"],
+	  "statModifier": "StartingScraps",
+	  "modifierValue": 250.0
+	},
+	{
+	  "id": "tech_hull_reinforce_1",
+	  "name": "钛钨复合龙骨 I",
+	  "category": "OffenseDefense",
+	  "tier": 1,
+	  "coreCost": 1,
+	  "description": "全舰所有结构与装甲构件的最大生命值上限提升 +15%。",
+	  "prerequisites": [],
+	  "statModifier": "HullMaxHpMult",
+	  "modifierValue": 0.15
+	},
+	{
+	  "id": "tech_pulse_accelerator",
+	  "name": "超导量子母线",
+	  "category": "Pipeline",
+	  "tier": 1,
+	  "coreCost": 2,
+	  "description": "内部 PCB 能量脉冲在导线中的传导速度永久提升 +30%。",
+	  "prerequisites": [],
+	  "statModifier": "PulseSpeedMult",
+	  "modifierValue": 0.30
+	},
+	{
+	  "id": "tech_market_vip",
+	  "name": "黑市走私特许证",
+	  "category": "Utility",
+	  "tier": 1,
+	  "coreCost": 2,
+	  "description": "深空黑市所有在售构件与战备维修服务价格享受 8 折优惠。",
+	  "prerequisites": [],
+	  "statModifier": "MarketDiscount",
+	  "modifierValue": 0.20
+	}
+  ]
+}
+</file>
+
 <file path="core_data/mod_manifest.json">
 {
   "id": "core_data",
@@ -2258,6 +3233,58 @@ script = ExtResource("1_imwll")
 
 [node name="BackgroundGrid" type="Node2D" parent="." unique_id=717043087]
 script = ExtResource("2_bj8rb")
+</file>
+
+<file path="Scenes/Tests/Test_Task39.tscn">
+[gd_scene format=3 uid="uid://cerm5upv616r1"]
+
+[ext_resource type="Script" uid="uid://b6yj0d8c6j71r" path="res://Scripts/Test/Test_Task39.cs" id="1_4d17i"]
+[ext_resource type="Script" uid="uid://c348cmajq8trh" path="res://Scripts/Test/BackgroundGrid.cs" id="2_oulmk"]
+
+[node name="TestTask39" type="Node2D" unique_id=209083625]
+script = ExtResource("1_4d17i")
+
+[node name="BackgroundGrid" type="Node2D" parent="." unique_id=846147115]
+script = ExtResource("2_oulmk")
+</file>
+
+<file path="Scenes/Tests/Test_Task40.tscn">
+[gd_scene format=3 uid="uid://7xwhedwepd8e"]
+
+[ext_resource type="Script" uid="uid://dpj5o1sk6ka4y" path="res://Scripts/Test/Test_Task40.cs" id="1_2v2ml"]
+[ext_resource type="Script" uid="uid://c348cmajq8trh" path="res://Scripts/Test/BackgroundGrid.cs" id="2_7r1vr"]
+
+[node name="TestTask40" type="Node2D" unique_id=2069165081]
+script = ExtResource("1_2v2ml")
+
+[node name="BackgroundGrid" type="Node2D" parent="." unique_id=623413832]
+script = ExtResource("2_7r1vr")
+</file>
+
+<file path="Scenes/Tests/Test_Task41.tscn">
+[gd_scene format=3 uid="uid://kuj06v1m4def"]
+
+[ext_resource type="Script" uid="uid://dky266qswrjpn" path="res://Scripts/Test/Test_Task41.cs" id="1_ir60e"]
+[ext_resource type="Script" uid="uid://c348cmajq8trh" path="res://Scripts/Test/BackgroundGrid.cs" id="2_0xaiq"]
+
+[node name="TestTask41" type="Node2D" unique_id=374152442]
+script = ExtResource("1_ir60e")
+
+[node name="BackgroundGrid" type="Node2D" parent="." unique_id=1567690289]
+script = ExtResource("2_0xaiq")
+</file>
+
+<file path="Scenes/Tests/Test_Task42.tscn">
+[gd_scene format=3 uid="uid://ch3iq7a2joc83"]
+
+[ext_resource type="Script" uid="uid://17efys3jk7du" path="res://Scripts/Test/Test_Task42.cs" id="1_c16c7"]
+[ext_resource type="Script" uid="uid://c348cmajq8trh" path="res://Scripts/Test/BackgroundGrid.cs" id="2_r186v"]
+
+[node name="TestTask42" type="Node2D" unique_id=1534225339]
+script = ExtResource("1_c16c7")
+
+[node name="BackgroundGrid" type="Node2D" parent="." unique_id=1400992271]
+script = ExtResource("2_r186v")
 </file>
 
 <file path="Scripts/Audio/AudioManager.cs">
@@ -5982,70 +7009,230 @@ namespace BreakerProtocol.Combat
 uid://bqtvqniye2xuk
 </file>
 
-<file path="Scripts/Core/DataManager.cs">
-using System.IO;
+<file path="Scripts/Core/DataManager.cs.uid">
+uid://d1c20gvkuw67
+</file>
+
+<file path="Scripts/Core/GameStateManager.cs">
+using System;
 using Godot;
-using BreakerProtocol.Data;
-using BreakerProtocol.Data.Models;
-using BreakerProtocol.Data.Registries;
+using BreakerProtocol.Data.Persistence;
+using BreakerProtocol.Ship;
+using BreakerProtocol.UI.CombatHUD;
+using BreakerProtocol.UI.Events;
+using BreakerProtocol.UI.Hangar;
+using BreakerProtocol.UI.Market;
+using BreakerProtocol.UI.Menu;
+using BreakerProtocol.UI.Meta;
+using BreakerProtocol.UI.Sandbox;
+using BreakerProtocol.UI.SectorMap;
+using BreakerProtocol.UI.Settlement;
+using BreakerProtocol.World.Director;
+using BreakerProtocol.World.Economy;
+using BreakerProtocol.World.Events;
+using BreakerProtocol.World.Meta;
+using BreakerProtocol.World.Pacts;
+using BreakerProtocol.World.Sector;
+using BreakerProtocol.World.Settlement;
 
 namespace BreakerProtocol.Core
 {
-	public partial class DataManager : Node
+	/// <summary>
+	/// 全局游戏生命周期核心状态枚举
+	/// </summary>
+	public enum GameState
 	{
-		public static DataManager Instance { get; private set; } = null!;
+		MainMenu,         // 游戏主标题菜单
+		FleetHangar,      // 母港机库选船出征 (TASK-43)
+		HangarMetaTech,   // 母港科研局 (Meta 科技树)
+		SandboxBay,       // 虚拟风洞测试靶场
+		SectorMap,        // DAG 航路分支跃迁星图
+		Combat,           // 战术实时空战
+		BlackMarket,      // 废土黑市交易终端
+		AnomalyDialogue,  // 深空随机叙事异象
+		RunSettlement     // 战役胜败综合评分结算
+	}
 
-		public ModLoader Loader { get; private set; } = null!;
-		public DataHotReloader HotReloader { get; private set; } = null!;
+	/// <summary>
+	/// 全局游戏状态机中枢 (管理状态切换、UI 互斥、自动存盘与场景生命周期)
+	/// </summary>
+	public class GameStateManager
+	{
+		private static GameStateManager? _instance;
+		public static GameStateManager Instance => _instance ??= new GameStateManager();
 
-		public Registry<ModuleDataDefinition> Modules => Loader.ModuleRegistry;
-		public Registry<BlueprintDataDefinition> Blueprints => Loader.BlueprintRegistry;
+		public GameState CurrentState { get; private set; } = GameState.MainMenu;
+		public event Action<GameState, GameState>? OnStateChanged;
 
-		[Signal] public delegate void DataReloadedEventHandler();
+		// 核心实体与系统引用
+		public ShipEntity? PlayerShip { get; set; }
+		public SectorGraph? CurrentSectorGraph { get; set; }
 
-		public override void _EnterTree()
+		// UI 视图句柄容器
+		public MainMenuUI? MainMenuUI { get; set; }
+		public FleetHangarUI? FleetHangarUI { get; set; }
+		public SectorMapUI? MapUI { get; set; }
+		public BlackMarketShopUI? MarketUI { get; set; }
+		public SpaceEventDialogueUI? EventUI { get; set; }
+		public MetaTechTreeUI? MetaTechUI { get; set; }
+		public SandboxBayUI? SandboxUI { get; set; }
+		public RunSummaryUI? SummaryUI { get; set; }
+		public CombatHUD? CombatHUD { get; set; }
+
+		private GameStateManager() { }
+
+		/// <summary>
+		/// 安全切换全局游戏状态（带全屏无缝过渡动画）
+		/// </summary>
+		public void SwitchState(GameState newState, bool useTransition = true, string? transitionHint = null)
 		{
-			Instance = this;
-			Loader = new ModLoader();
-			HotReloader = new DataHotReloader();
+			if (CurrentState == newState && newState != GameState.MainMenu) return;
 
-			Loader.LoadAllMods();
-			HotReloader.OnFileReloadRequested += OnFileChanged;
+			GameState previousState = CurrentState;
 
-			string rootPath = OS.HasFeature("editor") 
-				? ProjectSettings.GlobalizePath("res://") 
-				: OS.GetExecutablePath().GetBaseDir();
-
-			HotReloader.StartWatching(
-				Path.Combine(rootPath, "core_data"),
-				Path.Combine(rootPath, "mods")
-			);
-		}
-
-		public override void _Process(double delta)
-		{
-			HotReloader.Poll();
-		}
-
-		private void OnFileChanged(string fullPath)
-		{
-			bool success = Loader.ReloadSingleFile(fullPath);
-			if (success)
+			if (useTransition && SceneTransitionManager.Instance != null)
 			{
-				EmitSignal(SignalName.DataReloaded);
+				SceneTransitionManager.Instance.Transition(() =>
+				{
+					ApplyStateSwitch(previousState, newState);
+				}, 0.25f, transitionHint);
+			}
+			else
+			{
+				ApplyStateSwitch(previousState, newState);
 			}
 		}
 
-		public override void _ExitTree()
+		private void ApplyStateSwitch(GameState previousState, GameState newState)
 		{
-			HotReloader.Dispose();
+			ExitState(previousState);
+			CurrentState = newState;
+			EnterState(newState);
+			OnStateChanged?.Invoke(previousState, newState);
+		}
+
+		private void ExitState(GameState state)
+		{
+			switch (state)
+			{
+				case GameState.Combat:
+					if (PlayerShip != null && CurrentSectorGraph != null)
+					{
+						SaveManager.Instance.SaveCurrentRun(PlayerShip, CurrentSectorGraph);
+					}
+					break;
+			}
+		}
+
+		private void EnterState(GameState state)
+		{
+			// 1. UI 互斥显隐同步
+			if (MainMenuUI != null) MainMenuUI.Visible = (state == GameState.MainMenu);
+			if (FleetHangarUI != null) FleetHangarUI.Visible = (state == GameState.FleetHangar);
+			if (MapUI != null) MapUI.Visible = (state == GameState.SectorMap);
+			if (MarketUI != null) MarketUI.Visible = (state == GameState.BlackMarket);
+			if (EventUI != null) EventUI.Visible = (state == GameState.AnomalyDialogue);
+			if (MetaTechUI != null) MetaTechUI.Visible = (state == GameState.HangarMetaTech);
+			if (SandboxUI != null) SandboxUI.Visible = (state == GameState.SandboxBay);
+			if (SummaryUI != null) SummaryUI.Visible = (state == GameState.RunSettlement);
+			if (CombatHUD != null) CombatHUD.Visible = (state == GameState.Combat);
+
+			// 2. 状态进入特化逻辑
+			switch (state)
+			{
+				case GameState.SectorMap:
+					if (PlayerShip != null && CurrentSectorGraph != null)
+					{
+						SaveManager.Instance.SaveCurrentRun(PlayerShip, CurrentSectorGraph);
+					}
+					break;
+
+				case GameState.BlackMarket:
+					if (PlayerShip != null) MarketUI?.Initialize(PlayerShip);
+					break;
+
+				case GameState.HangarMetaTech:
+					SaveManager.Instance.LoadMeta();
+					break;
+			}
+
+			GD.PrintRich($"[color=cyan][GameStateManager] 状态流转成功: [{CurrentState}][/color]");
+		}
+
+		/// <summary>
+		/// 开启一轮全新星区战役 (根据玩家选定的战舰蓝图出征)
+		/// </summary>
+		public void StartNewRun(string initialBlueprintId = "bp_hf_m_anvil")
+		{
+			SaveManager.Instance.DeleteRunSave();
+			PlayerEconomyManager.Instance.Reset(initialScraps: 200, initialCores: 1);
+			CalamityPactManager.Instance.Reset();
+
+			// 1. 重构玩家飞船并注入 Meta 增益
+			if (PlayerShip != null)
+			{
+				if (DataManager.Instance.Blueprints.TryGet(initialBlueprintId, out var bp) && bp != null)
+				{
+					ShipBlueprintLoader.ApplyBlueprint(PlayerShip, bp);
+				}
+				MetaProgressionManager.Instance.ApplyMetaBuffsToNewRun(PlayerShip);
+			}
+
+			// 2. 生成全新星图
+			CurrentSectorGraph = SectorMapGenerator.GenerateSector(totalColumns: 8);
+			MapUI?.SetGraph(CurrentSectorGraph);
+
+			SwitchState(GameState.SectorMap, true, "✦ 正在生成未知深空星区拓扑 ✦");
+		}
+
+		/// <summary>
+		/// 从本地存档无损恢复战役进度
+		/// </summary>
+		public bool ContinueSavedRun()
+		{
+			if (!SaveManager.Instance.HasActiveRunSave() || PlayerShip == null) return false;
+
+			if (SaveManager.Instance.RestoreCurrentRun(PlayerShip, out var restoredGraph))
+			{
+				CurrentSectorGraph = restoredGraph;
+				if (CurrentSectorGraph != null && MapUI != null)
+				{
+					MapUI.SetGraph(CurrentSectorGraph);
+				}
+				SwitchState(GameState.SectorMap, true, "✦ 正在重构舰载战损与航路数据 ✦");
+				return true;
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// 战役胜利或阵亡结算
+		/// </summary>
+		public void TriggerGameOver(RunEndingType ending)
+		{
+			var stats = new RunStatistics
+			{
+				Ending = ending,
+				SectorsCleared = CurrentSectorGraph?.NodesByColumn.FindIndex(col => col.Exists(n => n.Id == CurrentSectorGraph.CurrentNodeId)) + 1 ?? 4,
+				StandardEnemiesKilled = 12,
+				ElitesKilled = 2,
+				BossesKilled = ending == RunEndingType.Victory ? 1 : 0,
+				TotalScrapsEarned = PlayerEconomyManager.Instance.Scraps,
+				ComputeCoresEarned = PlayerEconomyManager.Instance.ComputeCores,
+				FinalHullIntegrityPercent = 80.0f
+			};
+
+			SaveManager.Instance.DeleteRunSave();
+			SummaryUI?.OpenSummary(stats);
+			SwitchState(GameState.RunSettlement, true, "✦ 战役信号归档结算中 ✦");
 		}
 	}
 }
 </file>
 
-<file path="Scripts/Core/DataManager.cs.uid">
-uid://d1c20gvkuw67
+<file path="Scripts/Core/GameStateManager.cs.uid">
+uid://dx7b7iihekgvn
 </file>
 
 <file path="Scripts/Core/GlobalMetrics.cs">
@@ -6155,6 +7342,106 @@ namespace BreakerProtocol.Core
 uid://dt4fo4ba7kuwj
 </file>
 
+<file path="Scripts/Core/SceneTransitionManager.cs">
+using System;
+using Godot;
+
+namespace BreakerProtocol.Core
+{
+	/// <summary>
+	/// 全局场景/状态无缝转场过渡中枢 (单例模式)
+	/// </summary>
+	public partial class SceneTransitionManager : CanvasLayer
+	{
+		private static SceneTransitionManager? _instance;
+		public static SceneTransitionManager Instance => _instance!;
+
+		private ColorRect _fadeOverlay = null!;
+		private RichTextLabel _loadingLabel = null!;
+		private Tween? _activeTween;
+
+		public bool IsTransitioning { get; private set; } = false;
+
+		public override void _Ready()
+		{
+			_instance = this;
+			Layer = 128;
+
+			Vector2 vpSize = GetViewport().GetVisibleRect().Size;
+
+			// 1. 全屏黑色暗化遮罩
+			_fadeOverlay = new ColorRect
+			{
+				Color = new Color(0.01f, 0.02f, 0.05f, 0.0f),
+				MouseFilter = Control.MouseFilterEnum.Ignore,
+				Size = vpSize,
+				CustomMinimumSize = vpSize
+			};
+			AddChild(_fadeOverlay);
+
+			// 2. 转场提示文字居中
+			_loadingLabel = new RichTextLabel
+			{
+				BbcodeEnabled = true,
+				Text = "[center][b][color=cyan]✦ 超空间跳跃折跃中... ✦[/color][/b][/center]",
+				FitContent = true,
+				CustomMinimumSize = new Vector2(600, 50),
+				MouseFilter = Control.MouseFilterEnum.Ignore,
+				Modulate = new Color(1, 1, 1, 0.0f)
+			};
+			_loadingLabel.Position = new Vector2((vpSize.X - 600) * 0.5f, vpSize.Y * 0.5f - 25);
+			AddChild(_loadingLabel);
+		}
+
+		public void Transition(Action onBlackScreen, float fadeDuration = 0.35f, string? customHint = null)
+		{
+			if (IsTransitioning) return;
+			IsTransitioning = true;
+
+			Vector2 vpSize = GetViewport().GetVisibleRect().Size;
+			_fadeOverlay.Size = vpSize;
+			_fadeOverlay.CustomMinimumSize = vpSize;
+			_loadingLabel.Position = new Vector2((vpSize.X - 600) * 0.5f, vpSize.Y * 0.5f - 25);
+
+			_fadeOverlay.MouseFilter = Control.MouseFilterEnum.Stop;
+			_loadingLabel.Text = $"[center][b][color=cyan]{(string.IsNullOrEmpty(customHint) ? "✦ 超空间折跃解算中... ✦" : customHint)}[/color][/b][/center]";
+
+			_activeTween?.Kill();
+			_activeTween = CreateTween();
+			_activeTween.SetParallel(true);
+
+			// Phase 1: 暗化渐入
+			_activeTween.TweenProperty(_fadeOverlay, "color:a", 1.0f, fadeDuration)
+				.SetTrans(Tween.TransitionType.Cubic)
+				.SetEase(Tween.EaseType.Out);
+			_activeTween.TweenProperty(_loadingLabel, "modulate:a", 1.0f, fadeDuration * 0.8f);
+
+			// Phase 2: 执行切换
+			_activeTween.Chain().TweenCallback(Callable.From(() =>
+			{
+				onBlackScreen?.Invoke();
+			}));
+
+			// Phase 3: 渐出恢复
+			_activeTween.Chain().TweenProperty(_fadeOverlay, "color:a", 0.0f, fadeDuration)
+				.SetTrans(Tween.TransitionType.Cubic)
+				.SetEase(Tween.EaseType.In);
+			_activeTween.TweenProperty(_loadingLabel, "modulate:a", 0.0f, fadeDuration * 0.6f);
+
+			_activeTween.Chain().TweenCallback(Callable.From(() =>
+			{
+				_fadeOverlay.MouseFilter = Control.MouseFilterEnum.Ignore;
+				IsTransitioning = false;
+			}));
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Core/SceneTransitionManager.cs.uid">
+uid://c5in6xn6rdm7g
+</file>
+
 <file path="Scripts/Data/Models/BlueprintModels.cs">
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -6204,60 +7491,185 @@ namespace BreakerProtocol.Data.Models
 uid://dbwjldidnl2xk
 </file>
 
-<file path="Scripts/Data/Models/DataModels.cs">
+<file path="Scripts/Data/Models/CalamityPactModels.cs">
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace BreakerProtocol.Data.Models
 {
 	/// <summary>
-	/// 引脚方向类型
+	/// 灾厄契约数据定义模型 (严格映射 pact_core_rules.json)
 	/// </summary>
-	public enum PinType
-	{
-		IN,
-		OUT
-	}
-
-	/// <summary>
-	/// 引脚数据结构定义
-	/// </summary>
-	public class PinDefinition
-	{
-		[JsonPropertyName("pinId")] public string PinId { get; set; } = string.Empty;
-		[JsonPropertyName("type")] public string Type { get; set; } = "IN"; // "IN" 或 "OUT"
-		[JsonPropertyName("localGridX")] public int LocalGridX { get; set; } = 0;
-		[JsonPropertyName("localGridY")] public int LocalGridY { get; set; } = 0;
-		[JsonPropertyName("category")] public string Category { get; set; } = "Standard";
-	}
-
-	/// <summary>
-	/// 单个构件完整定义模型 (对应 modules/*.json)
-	/// </summary>
-	public class ModuleDataDefinition
+	public class CalamityPactDef
 	{
 		[JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
-		[JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
-		[JsonPropertyName("faction")] public string Faction { get; set; } = "Universal"; // HeavyFoundry / VoidSyndicate / BioChitin / Universal
-		[JsonPropertyName("category")] public string Category { get; set; } = "Weapon"; // PowerSource / Weapon / Modifier / Armor / Thruster / Logistics
-		
-		[JsonPropertyName("width")] public int Width { get; set; } = 1;
-		[JsonPropertyName("height")] public int Height { get; set; } = 1;
-		[JsonPropertyName("mass")] public float Mass { get; set; } = 5.0f; // 吨
-		[JsonPropertyName("baseHp")] public float BaseHp { get; set; } = 200.0f;
-		[JsonPropertyName("armorResistance")] public float ArmorResistance { get; set; } = 10.0f;
-		
-		[JsonPropertyName("spritePath")] public string SpritePath { get; set; } = string.Empty;
-		[JsonPropertyName("tags")] public string[] Tags { get; set; } = System.Array.Empty<string>();
-		[JsonPropertyName("pins")] public PinDefinition[] Pins { get; set; } = System.Array.Empty<PinDefinition>();
-		
-		// 动态附加的武器与效果参数（存储为原始 JsonElement，交由 EffectProcessor 解析）
-		[JsonPropertyName("properties")] public System.Text.Json.JsonElement Properties { get; set; }
+		[JsonPropertyName("title")] public string Title { get; set; } = string.Empty;
+		[JsonPropertyName("penalty")] public string Penalty { get; set; } = "ThermalOverload";
+		[JsonPropertyName("reward")] public string Reward { get; set; } = "HyperPulse";
+		[JsonPropertyName("scrapBonusMultiplier")] public float ScrapBonusMultiplier { get; set; } = 0.5f;
+		[JsonPropertyName("themeColor")] public string ThemeColorHex { get; set; } = "#DC143C";
+		[JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+	}
+
+	/// <summary>
+	/// 灾厄契约 JSON 文件包装 DTO
+	/// </summary>
+	public class CalamityPactsFileDef
+	{
+		[JsonPropertyName("pacts")] public List<CalamityPactDef> Pacts { get; set; } = new();
 	}
 }
 </file>
 
+<file path="Scripts/Data/Models/CalamityPactModels.cs.uid">
+uid://bn75ck24h03an
+</file>
+
 <file path="Scripts/Data/Models/DataModels.cs.uid">
 uid://vcti7d66kvcf
+</file>
+
+<file path="Scripts/Data/Models/DropTableModels.cs">
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace BreakerProtocol.Data.Models
+{
+	[JsonConverter(typeof(JsonStringEnumConverter))]
+	public enum DropItemType
+	{
+		None,       // 空掉落
+		Module,     // 构件物品
+		Blueprint   // 蓝图图纸
+	}
+
+	public class DropEntryDef
+	{
+		[JsonPropertyName("moduleId")] public string ModuleId { get; set; } = string.Empty;
+		[JsonPropertyName("weight")] public int Weight { get; set; } = 10;
+		[JsonPropertyName("dropType")] public DropItemType DropType { get; set; } = DropItemType.Module;
+	}
+
+	public class DropTableDef
+	{
+		[JsonPropertyName("tableId")] public string TableId { get; set; } = string.Empty;
+		[JsonPropertyName("displayName")] public string DisplayName { get; set; } = string.Empty;
+		[JsonPropertyName("minScraps")] public int MinScraps { get; set; } = 10;
+		[JsonPropertyName("maxScraps")] public int MaxScraps { get; set; } = 30;
+		[JsonPropertyName("coreDropChance")] public float CoreDropChance { get; set; } = 0.0f;
+		[JsonPropertyName("entries")] public List<DropEntryDef> Entries { get; set; } = new();
+	}
+
+	public class DropTableFileDef
+	{
+		[JsonPropertyName("dropTables")] public List<DropTableDef> DropTables { get; set; } = new();
+	}
+}
+</file>
+
+<file path="Scripts/Data/Models/DropTableModels.cs.uid">
+uid://cs4suhpk6d8b0
+</file>
+
+<file path="Scripts/Data/Models/EncounterModels.cs">
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace BreakerProtocol.Data.Models
+{
+	public class SpawnOffsetDef
+	{
+		[JsonPropertyName("x")] public float X { get; set; } = 0.0f;
+		[JsonPropertyName("y")] public float Y { get; set; } = 0.0f;
+	}
+
+	public class EncounterShipDef
+	{
+		[JsonPropertyName("blueprintId")] public string BlueprintId { get; set; } = string.Empty;
+		[JsonPropertyName("role")] public string Role { get; set; } = "Scout";
+		[JsonPropertyName("spawnOffset")] public SpawnOffsetDef SpawnOffset { get; set; } = new();
+	}
+
+	public class EncounterDef
+	{
+		[JsonPropertyName("encounterId")] public string EncounterId { get; set; } = string.Empty;
+		[JsonPropertyName("displayName")] public string DisplayName { get; set; } = string.Empty;
+		[JsonPropertyName("category")] public string Category { get; set; } = "Combat";
+		[JsonPropertyName("difficultyRating")] public int DifficultyRating { get; set; } = 1;
+		[JsonPropertyName("ships")] public List<EncounterShipDef> Ships { get; set; } = new();
+	}
+
+	public class EncounterPoolFileDef
+	{
+		[JsonPropertyName("encounters")] public List<EncounterDef> Encounters { get; set; } = new();
+	}
+}
+</file>
+
+<file path="Scripts/Data/Models/EncounterModels.cs.uid">
+uid://djfr4jjy8xxgk
+</file>
+
+<file path="Scripts/Data/Models/MarketModels.cs">
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace BreakerProtocol.Data.Models
+{
+	/// <summary>
+	/// 黑市经济规则配置 DTO (严格映射 core_data/markets/market_config.json)
+	/// </summary>
+	public class MarketConfigDef
+	{
+		[JsonPropertyName("defaultStockCount")] public int DefaultStockCount { get; set; } = 5;
+		[JsonPropertyName("scrapResellRate")] public float ScrapResellRate { get; set; } = 0.60f;
+		[JsonPropertyName("fieldRepairBaseCost")] public int FieldRepairBaseCost { get; set; } = 100;
+		[JsonPropertyName("ablativeResetCost")] public int AblativeResetCost { get; set; } = 75;
+		[JsonPropertyName("stockRerollCost")] public int StockRerollCost { get; set; } = 30;
+		[JsonPropertyName("categoryBasePrices")] public Dictionary<string, int> CategoryBasePrices { get; set; } = new();
+	}
+}
+</file>
+
+<file path="Scripts/Data/Models/MarketModels.cs.uid">
+uid://dk7jr5vjq8wev
+</file>
+
+<file path="Scripts/Data/Models/MetaTechModels.cs">
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace BreakerProtocol.Data.Models
+{
+	/// <summary>
+	/// 单个母港科技节点定义 DTO
+	/// </summary>
+	public class TechNodeDef
+	{
+		[JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+		[JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+		[JsonPropertyName("category")] public string Category { get; set; } = "Economy";
+		[JsonPropertyName("tier")] public int Tier { get; set; } = 1;
+		[JsonPropertyName("coreCost")] public int CoreCost { get; set; } = 1;
+		[JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+		[JsonPropertyName("prerequisites")] public string[] Prerequisites { get; set; } = Array.Empty<string>();
+		[JsonPropertyName("statModifier")] public string StatModifier { get; set; } = string.Empty;
+		[JsonPropertyName("modifierValue")] public float ModifierValue { get; set; } = 0.0f;
+	}
+
+	/// <summary>
+	/// 科技树 JSON 文件包装 DTO
+	/// </summary>
+	public class TechTreeFileDef
+	{
+		[JsonPropertyName("techNodes")] public List<TechNodeDef> TechNodes { get; set; } = new();
+	}
+}
+</file>
+
+<file path="Scripts/Data/Models/MetaTechModels.cs.uid">
+uid://df0pkl7q6eaaq
 </file>
 
 <file path="Scripts/Data/Models/ModManifest.cs">
@@ -6407,6 +7819,587 @@ namespace BreakerProtocol.Data.Models
 uid://c2isunsr3hhv7
 </file>
 
+<file path="Scripts/Data/Models/SaveModels.cs">
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace BreakerProtocol.Data.Models
+{
+	// =========================================================================
+	// 1. 安全存档外层包装信封 (含 SHA-256 防篡改签名)
+	// =========================================================================
+	public class SaveEnvelope<T>
+	{
+		[JsonPropertyName("version")] public string Version { get; set; } = "1.0.0";
+		[JsonPropertyName("timestamp")] public string Timestamp { get; set; } = string.Empty;
+		[JsonPropertyName("sha256Signature")] public string Sha256Signature { get; set; } = string.Empty;
+		[JsonPropertyName("payload")] public T? Payload { get; set; }
+	}
+
+	// =========================================================================
+	// 2. 母港永久 Meta 科技树与生涯存档数据
+	// =========================================================================
+	public class MetaSaveData
+	{
+		[JsonPropertyName("dataFragments")] public int DataFragments { get; set; } = 0;
+		[JsonPropertyName("unlockedTechIds")] public List<string> UnlockedTechIds { get; set; } = new();
+		[JsonPropertyName("totalRunsCount")] public int TotalRunsCount { get; set; } = 0;
+		[JsonPropertyName("victoriesCount")] public int VictoriesCount { get; set; } = 0;
+		[JsonPropertyName("highestScore")] public int HighestScore { get; set; } = 0;
+		[JsonPropertyName("unlockedBlueprints")] public List<string> UnlockedBlueprints { get; set; } = new();
+	}
+
+	// =========================================================================
+	// 3. 单局战役实时战况快照 (支持断线恢复与中途暂存)
+	// =========================================================================
+
+	/// <summary>
+	/// 单个构件实时战损状态
+	/// </summary>
+	public class SavedModuleState
+	{
+		[JsonPropertyName("moduleId")] public string ModuleId { get; set; } = string.Empty;
+		[JsonPropertyName("gridX")] public int GridX { get; set; }
+		[JsonPropertyName("gridY")] public int GridY { get; set; }
+		[JsonPropertyName("rotation")] public int Rotation { get; set; }
+		[JsonPropertyName("currentHp")] public float CurrentHp { get; set; }
+		[JsonPropertyName("maxHp")] public float MaxHp { get; set; }
+		[JsonPropertyName("isDestroyed")] public bool IsDestroyed { get; set; }
+	}
+
+	/// <summary>
+	/// 单条 PCB 导线连接状态
+	/// </summary>
+	public class SavedWireState
+	{
+		[JsonPropertyName("sourceGridX")] public int SourceGridX { get; set; }
+		[JsonPropertyName("sourceGridY")] public int SourceGridY { get; set; }
+		[JsonPropertyName("targetGridX")] public int TargetGridX { get; set; }
+		[JsonPropertyName("targetGridY")] public int TargetGridY { get; set; }
+	}
+
+	/// <summary>
+	/// 战舰全量物理结构与走线快照
+	/// </summary>
+	public class SavedShipState
+	{
+		[JsonPropertyName("baseBlueprintId")] public string BaseBlueprintId { get; set; } = "bp_hf_m_anvil";
+		[JsonPropertyName("modules")] public List<SavedModuleState> Modules { get; set; } = new();
+		[JsonPropertyName("wires")] public List<SavedWireState> Wires { get; set; } = new();
+	}
+
+	/// <summary>
+	/// 星图单个航路节点状态
+	/// </summary>
+	public class SavedNodeState
+	{
+		[JsonPropertyName("nodeId")] public string NodeId { get; set; } = string.Empty;
+		[JsonPropertyName("column")] public int Column { get; set; }
+		[JsonPropertyName("row")] public int Row { get; set; }
+		[JsonPropertyName("type")] public string Type { get; set; } = "Combat";
+		[JsonPropertyName("state")] public string State { get; set; } = "Unreachable";
+		[JsonPropertyName("normX")] public float NormX { get; set; }
+		[JsonPropertyName("normY")] public float NormY { get; set; }
+		[JsonPropertyName("outgoingConnections")] public List<string> OutgoingConnections { get; set; } = new();
+	}
+
+	/// <summary>
+	/// 星区 DAG 拓扑全景快照
+	/// </summary>
+	public class SavedSectorState
+	{
+		[JsonPropertyName("totalColumns")] public int TotalColumns { get; set; } = 8;
+		[JsonPropertyName("currentNodeId")] public string? CurrentNodeId { get; set; }
+		[JsonPropertyName("pursuitWavefrontColumn")] public float PursuitWavefrontColumn { get; set; } = -1.5f;
+		[JsonPropertyName("nodes")] public List<SavedNodeState> Nodes { get; set; } = new();
+	}
+
+	/// <summary>
+	/// 单局战役完整现场数据包 (user://current_run.json)
+	/// </summary>
+	public class RunSaveData
+	{
+		[JsonPropertyName("runSeed")] public int RunSeed { get; set; }
+		[JsonPropertyName("currentScraps")] public int CurrentScraps { get; set; } = 0;
+		[JsonPropertyName("currentCores")] public int CurrentCores { get; set; } = 0;
+		[JsonPropertyName("activePactIds")] public List<string> ActivePactIds { get; set; } = new();
+		[JsonPropertyName("ship")] public SavedShipState Ship { get; set; } = new();
+		[JsonPropertyName("sector")] public SavedSectorState Sector { get; set; } = new();
+	}
+}
+</file>
+
+<file path="Scripts/Data/Models/SaveModels.cs.uid">
+uid://bi6vrt7qfddil
+</file>
+
+<file path="Scripts/Data/Models/SpaceEventModels.cs">
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using Godot;
+
+namespace BreakerProtocol.Data.Models
+{
+	/// <summary>
+	/// 异象结算后果类型
+	/// </summary>
+	[JsonConverter(typeof(JsonStringEnumConverter))]
+	public enum OutcomeType
+	{
+		GainCurrency,     // 获得金属废料 / 算力核心
+		SpendCurrency,    // 消耗金属废料 / 算力核心
+		RepairShip,       // 维修舰体构件
+		DamageModule,     // 随机构件受到损伤
+		GainRandomModule, // 获得随机高级构件
+		TriggerAmbush,    // 触发突发伏击
+		NextEventNode     // 流转至后续阶段事件
+	}
+
+	/// <summary>
+	/// 单个事件抉择项的结算后果
+	/// </summary>
+	public class EventOutcome
+	{
+		[JsonPropertyName("type")] public OutcomeType Type { get; set; } = OutcomeType.GainCurrency;
+		[JsonPropertyName("isSuccess")] public bool IsSuccess { get; set; } = true;
+		[JsonPropertyName("rollPercent")] public float RollPercent { get; set; } = 0.0f;
+		[JsonPropertyName("targetThreshold")] public float TargetThreshold { get; set; } = 1.0f;
+		[JsonPropertyName("scrapDelta")] public int ScrapDelta { get; set; } = 0;
+		[JsonPropertyName("coreDelta")] public int CoreDelta { get; set; } = 0;
+		[JsonPropertyName("repairRatio")] public float RepairRatio { get; set; } = 0.0f;
+		[JsonPropertyName("damageAmount")] public float DamageAmount { get; set; } = 0.0f;
+		[JsonPropertyName("nextNodeId")] public string? NextNodeId { get; set; }
+		[JsonPropertyName("resultLog")] public string ResultLog { get; set; } = string.Empty;
+	}
+
+	/// <summary>
+	/// 单个事件分支选项
+	/// </summary>
+	public class EventChoice
+	{
+		[JsonPropertyName("choiceText")] public string ChoiceText { get; set; } = string.Empty;
+		[JsonPropertyName("requiredConditionTag")] public string RequiredConditionTag { get; set; } = string.Empty;
+		[JsonPropertyName("requiredScraps")] public int RequiredScraps { get; set; } = 0;
+		[JsonPropertyName("requiredCores")] public int RequiredCores { get; set; } = 0;
+		[JsonPropertyName("successRate")] public float SuccessRate { get; set; } = 1.0f;
+
+		[JsonPropertyName("successOutcome")] public EventOutcome SuccessOutcome { get; set; } = new();
+		[JsonPropertyName("failureOutcome")] public EventOutcome? FailureOutcome { get; set; }
+	}
+
+	/// <summary>
+	/// 单个完整深空随机事件节点 (对应 core_data/events/*.json)
+	/// </summary>
+	public class SpaceEventNode
+	{
+		[JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+		[JsonPropertyName("title")] public string Title { get; set; } = string.Empty;
+		[JsonPropertyName("factionTag")] public string FactionTag { get; set; } = "深空异象";
+		[JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+		
+		[JsonPropertyName("themeColorHex")] public string ThemeColorHex { get; set; } = "#59D9F2";
+
+		[JsonIgnore]
+		public Color ThemeColor => Color.FromHtml(ThemeColorHex);
+
+		[JsonPropertyName("choices")] public List<EventChoice> Choices { get; set; } = new();
+	}
+}
+</file>
+
+<file path="Scripts/Data/Models/SpaceEventModels.cs.uid">
+uid://w4680xl5vc5h
+</file>
+
+<file path="Scripts/Data/Persistence/SaveManager.cs">
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
+using BreakerProtocol.Ship;
+using BreakerProtocol.Ship.Pipeline;
+using BreakerProtocol.World.Economy;
+using BreakerProtocol.World.Meta;
+using BreakerProtocol.World.Pacts;
+using BreakerProtocol.World.Sector;
+
+namespace BreakerProtocol.Data.Persistence
+{
+	/// <summary>
+	/// 全局战役存档、母港 Meta 进度与持久化总管中枢 (单例模式)
+	/// </summary>
+	public class SaveManager
+	{
+		private static SaveManager? _instance;
+		public static SaveManager Instance => _instance ??= new SaveManager();
+
+		private const string SaltKey = "BREAKER_PROTOCOL_DATA_INTEGRITY_SALT_2026";
+		private readonly string _metaSavePath;
+		private readonly string _runSavePath;
+
+		public static readonly JsonSerializerOptions JsonOpts = new()
+		{
+			WriteIndented = true,
+			PropertyNameCaseInsensitive = true
+		};
+
+		private SaveManager()
+		{
+			string userDir = ProjectSettings.GlobalizePath("user://");
+			if (!Directory.Exists(userDir))
+			{
+				Directory.CreateDirectory(userDir);
+			}
+
+			_metaSavePath = Path.Combine(userDir, "meta_progression.json");
+			_runSavePath = Path.Combine(userDir, "current_run.json");
+		}
+
+		// =====================================================================
+		// 1. 母港永久 Meta 科技树存档管理
+		// =====================================================================
+
+		/// <summary>
+		/// 保存母港 Meta 科技树与生涯进度
+		/// </summary>
+		public bool SaveMeta()
+		{
+			try
+			{
+				var metaData = new MetaSaveData
+				{
+					DataFragments = MetaProgressionManager.Instance.DataFragments,
+					UnlockedTechIds = new List<string>()
+				};
+
+				foreach (var tech in MetaProgressionManager.Instance.AllTechs.Values)
+				{
+					if (tech.IsUnlocked)
+					{
+						metaData.UnlockedTechIds.Add(tech.Id);
+					}
+				}
+
+				return WriteEnvelopeToFile(_metaSavePath, metaData);
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"[SaveManager] 保存母港 Meta 进度失败: {ex.Message}");
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 读取母港 Meta 科技树并注入 MetaProgressionManager
+		/// </summary>
+		public bool LoadMeta()
+		{
+			if (!File.Exists(_metaSavePath))
+			{
+				GD.Print("[SaveManager] 未发现历史母港存档，将建立全新研发档案。");
+				return false;
+			}
+
+			if (ReadEnvelopeFromFile<MetaSaveData>(_metaSavePath, out var metaData) && metaData != null)
+			{
+				// 原子化复原母港碎片与科技激活列表
+				MetaProgressionManager.Instance.LoadState(metaData.DataFragments, metaData.UnlockedTechIds);
+
+				GD.PrintRich($"[color=green][SaveManager] ✔ 成功加载母港存档: 研发碎片={metaData.DataFragments} 💾 | 已激活科技={metaData.UnlockedTechIds.Count} 项[/color]");
+				return true;
+			}
+
+			GD.PrintErr("[SaveManager] 母港存档数据校验失败或被非法篡改！");
+			return false;
+		}
+
+		// =====================================================================
+		// 2. 单局战役现场快照 (战损残局与星图暂存)
+		// =====================================================================
+
+		public bool HasActiveRunSave() => File.Exists(_runSavePath);
+
+		public void DeleteRunSave()
+		{
+			if (File.Exists(_runSavePath))
+			{
+				File.Delete(_runSavePath);
+				GD.Print("[SaveManager] 单局战役现场存档已清理 (战役结束/撤离归港)。");
+			}
+		}
+
+		/// <summary>
+		/// 捕获当前战役全景并存盘 (战舰战损、导线网络、废料、契约与星图)
+		/// </summary>
+		public bool SaveCurrentRun(ShipEntity playerShip, SectorGraph? sectorGraph)
+		{
+			try
+			{
+				var runData = new RunSaveData
+				{
+					RunSeed = (int)GD.Randi(),
+					CurrentScraps = PlayerEconomyManager.Instance.Scraps,
+					CurrentCores = PlayerEconomyManager.Instance.ComputeCores
+				};
+
+				// 1. 记录激活契约
+				foreach (var pact in CalamityPactManager.Instance.GetActivePacts())
+				{
+					runData.ActivePactIds.Add(pact.Id);
+				}
+
+				// 2. 捕获战舰构件与战损残局
+				if (playerShip?.Grid != null)
+				{
+					foreach (var m in playerShip.Grid.Modules)
+					{
+						runData.Ship.Modules.Add(new SavedModuleState
+						{
+							ModuleId = m.Definition.Id,
+							GridX = m.GridPosition.X,
+							GridY = m.GridPosition.Y,
+							Rotation = m.Rotation,
+							CurrentHp = m.CurrentHp,
+							MaxHp = m.MaxHp,
+							IsDestroyed = m.IsDestroyed
+						});
+					}
+
+					// 捕获 PCB 导线网络
+					foreach (var wire in playerShip.Pipeline.Wires)
+					{
+						if (wire.GridPath == null || wire.GridPath.Count < 2) continue;
+
+						Vector2I srcPos = wire.GridPath[0];
+						Vector2I dstPos = wire.GridPath[^1];
+
+						runData.Ship.Wires.Add(new SavedWireState
+						{
+							SourceGridX = srcPos.X,
+							SourceGridY = srcPos.Y,
+							TargetGridX = dstPos.X,
+							TargetGridY = dstPos.Y
+						});
+					}
+				}
+
+				// 3. 捕获星图状态
+				if (sectorGraph != null)
+				{
+					runData.Sector.TotalColumns = sectorGraph.TotalColumns;
+					runData.Sector.CurrentNodeId = sectorGraph.CurrentNodeId;
+					runData.Sector.PursuitWavefrontColumn = sectorGraph.PursuitWavefrontColumn;
+
+					foreach (var node in sectorGraph.AllNodes.Values)
+					{
+						var nodeState = new SavedNodeState
+						{
+							NodeId = node.Id,
+							Column = node.Column,
+							Row = node.Row,
+							Type = node.Type.ToString(),
+							State = node.State.ToString(),
+							NormX = node.NormalizedPosition.X,
+							NormY = node.NormalizedPosition.Y,
+							OutgoingConnections = new List<string>(node.OutgoingConnections)
+						};
+						runData.Sector.Nodes.Add(nodeState);
+					}
+				}
+
+				return WriteEnvelopeToFile(_runSavePath, runData);
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"[SaveManager] 战局现场暂存失败: {ex.Message}");
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 从存档恢复单局现场 (1:1 完美复原战舰战损、断线与星图拓扑)
+		/// </summary>
+		public bool RestoreCurrentRun(ShipEntity targetShip, out SectorGraph? restoredGraph)
+		{
+			restoredGraph = null;
+			if (!File.Exists(_runSavePath)) return false;
+
+			if (!ReadEnvelopeFromFile<RunSaveData>(_runSavePath, out var runData) || runData == null)
+			{
+				GD.PrintErr("[SaveManager] 战局存档校验失败或已损坏！");
+				return false;
+			}
+
+			// 1. 恢复资产与契约
+			PlayerEconomyManager.Instance.Reset(runData.CurrentScraps, runData.CurrentCores);
+			CalamityPactManager.Instance.Reset();
+			foreach (var pactId in runData.ActivePactIds)
+			{
+				CalamityPactManager.Instance.TogglePact(pactId);
+			}
+
+			// 2. 复原战舰物理网格与战损血量
+			if (targetShip?.Grid != null && runData.Ship.Modules.Count > 0)
+			{
+				targetShip.Grid.Clear();
+				targetShip.Pipeline.Clear();
+
+				foreach (var modRec in runData.Ship.Modules)
+				{
+					if (DataManager.Instance.Modules.TryGet(modRec.ModuleId, out var def) && def != null)
+					{
+						if (targetShip.Grid.TryPlaceModule(def, new Vector2I(modRec.GridX, modRec.GridY), modRec.Rotation, out var instance))
+						{
+							if (instance != null)
+							{
+								instance.CurrentHp = modRec.CurrentHp;
+							}
+						}
+					}
+				}
+
+				// 复原 PCB 导线网络
+				var pins = new List<PinInstance>(targetShip.GetAllPins());
+				foreach (var wireRec in runData.Ship.Wires)
+				{
+					Vector2I srcPos = new(wireRec.SourceGridX, wireRec.SourceGridY);
+					Vector2I dstPos = new(wireRec.TargetGridX, wireRec.TargetGridY);
+
+					var srcPin = pins.Find(p => p.AbsoluteGridPos == srcPos && p.Type == PinType.OUT);
+					var dstPin = pins.Find(p => p.AbsoluteGridPos == dstPos && p.Type == PinType.IN);
+
+					if (srcPin != null && dstPin != null)
+					{
+						targetShip.Pipeline.TryAddWire(srcPin, dstPin, targetShip.Grid, out _);
+					}
+				}
+
+				targetShip.RebuildPhysics();
+			}
+
+			// 3. 复原星区 DAG 拓扑
+			if (runData.Sector.Nodes.Count > 0)
+			{
+				var graph = new SectorGraph
+				{
+					TotalColumns = runData.Sector.TotalColumns,
+					CurrentNodeId = runData.Sector.CurrentNodeId,
+					PursuitWavefrontColumn = runData.Sector.PursuitWavefrontColumn
+				};
+
+				for (int col = 0; col < graph.TotalColumns; col++)
+				{
+					graph.NodesByColumn.Add(new List<SectorNode>());
+				}
+
+				foreach (var nodeData in runData.Sector.Nodes)
+				{
+					var node = new SectorNode
+					{
+						Id = nodeData.NodeId,
+						Column = nodeData.Column,
+						Row = nodeData.Row,
+						NormalizedPosition = new Vector2(nodeData.NormX, nodeData.NormY),
+						Type = Enum.TryParse<SectorNodeType>(nodeData.Type, out var t) ? t : SectorNodeType.Combat,
+						State = Enum.TryParse<NodeExplorationState>(nodeData.State, out var s) ? s : NodeExplorationState.Unreachable
+					};
+					node.OutgoingConnections.AddRange(nodeData.OutgoingConnections);
+
+					graph.AllNodes[node.Id] = node;
+					if (node.Column >= 0 && node.Column < graph.TotalColumns)
+					{
+						graph.NodesByColumn[node.Column].Add(node);
+					}
+				}
+
+				restoredGraph = graph;
+			}
+
+			GD.PrintRich($"[color=green][SaveManager] ✔ 战局现场 100% 复原成功！废料={runData.CurrentScraps} | 构件数={runData.Ship.Modules.Count} | 星区列={restoredGraph?.CurrentNodeId ?? "起始"}[/color]");
+			return true;
+		}
+
+		// =====================================================================
+		// 3. 底层安全信封与 SHA-256 哈希校验管道 (统一使用标准对象流生成签名)
+		// =====================================================================
+
+		private bool WriteEnvelopeToFile<T>(string filePath, T payload)
+		{
+			string payloadJson = JsonSerializer.Serialize(payload, JsonOpts);
+			string signature = ComputeSha256(payloadJson + SaltKey);
+
+			var envelope = new SaveEnvelope<T>
+			{
+				Version = "1.0.0",
+				Timestamp = DateTime.UtcNow.ToString("o"),
+				Sha256Signature = signature,
+				Payload = payload
+			};
+
+			string fullJson = JsonSerializer.Serialize(envelope, JsonOpts);
+			File.WriteAllText(filePath, fullJson);
+			return true;
+		}
+
+		private bool ReadEnvelopeFromFile<T>(string filePath, out T? payload)
+		{
+			payload = default;
+			try
+			{
+				string fullJson = File.ReadAllText(filePath);
+				var envelope = JsonSerializer.Deserialize<SaveEnvelope<T>>(fullJson, JsonOpts);
+
+				if (envelope == null || envelope.Payload == null)
+				{
+					return false;
+				}
+
+				// 将解析出的 Payload 按相同规范序列化后核验签名，完全规避层级缩进差异
+				string canonicalPayloadJson = JsonSerializer.Serialize(envelope.Payload, JsonOpts);
+				string actualSignature = ComputeSha256(canonicalPayloadJson + SaltKey);
+
+				if (!string.Equals(envelope.Sha256Signature, actualSignature, StringComparison.OrdinalIgnoreCase))
+				{
+					GD.PrintErr($"[SaveManager] 存档签名不匹配！文件疑似损坏或遭外部篡改: {filePath}");
+					return false;
+				}
+
+				payload = envelope.Payload;
+				return true;
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"[SaveManager] 反序列化存档失败: {filePath} | {ex.Message}");
+				return false;
+			}
+		}
+
+		private static string ComputeSha256(string rawData)
+		{
+			using var sha256 = SHA256.Create();
+			byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+			var sb = new StringBuilder();
+			foreach (var b in bytes)
+			{
+				sb.Append(b.ToString("x2"));
+			}
+			return sb.ToString();
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Data/Persistence/SaveManager.cs.uid">
+uid://cvdhvks84tcoe
+</file>
+
 <file path="Scripts/Data/Registries/Registry.cs">
 using System;
 using System.Collections.Concurrent;
@@ -6528,162 +8521,6 @@ namespace BreakerProtocol.Data.Registries
 
 <file path="Scripts/Data/Registries/Registry.cs.uid">
 uid://8tlyjv7blb3x
-</file>
-
-<file path="Scripts/Data/Validation/DataValidator.cs">
-using System;
-using System.Collections.Generic;
-using Godot;
-using BreakerProtocol.Data.Models;
-
-namespace BreakerProtocol.Data.Validation
-{
-	/// <summary>
-	/// 校验严重等级
-	/// </summary>
-	public enum ValidationSeverity
-	{
-		Info,
-		Warning,
-		Error
-	}
-
-	/// <summary>
-	/// 单条校验结果条目
-	/// </summary>
-	public class ValidationEntry
-	{
-		public ValidationSeverity Severity { get; set; }
-		public string Message { get; set; } = string.Empty;
-
-		public ValidationEntry(ValidationSeverity severity, string message)
-		{
-			Severity = severity;
-			Message = message;
-		}
-	}
-
-	/// <summary>
-	/// 强类型数据合规校验器
-	/// 负责在构件/蓝图注册前拦截非法配置
-	/// </summary>
-	public static class DataValidator
-	{
-		/// <summary>
-		/// 校验单个构件定义的合法性
-		/// </summary>
-		/// <param name="module">待校验的构件数据</param>
-		/// <param name="sourceFilePath">来源文件路径（用于报错追踪）</param>
-		/// <param name="entries">输出的错误/警告列表</param>
-		/// <returns>若无 Error 级别错误则返回 true</returns>
-		public static bool ValidateModule(ModuleDataDefinition module, string sourceFilePath, out List<ValidationEntry> entries)
-		{
-			entries = new List<ValidationEntry>();
-			bool hasFatalError = false;
-
-			// 1. 基础字段非空检查
-			if (string.IsNullOrWhiteSpace(module.Id))
-			{
-				entries.Add(new ValidationEntry(ValidationSeverity.Error, "构件 ID 不能为空！"));
-				hasFatalError = true;
-			}
-
-			if (string.IsNullOrWhiteSpace(module.Name))
-			{
-				entries.Add(new ValidationEntry(ValidationSeverity.Warning, $"构件 [{module.Id}] 未填写显示名称 (Name)。"));
-			}
-
-			// 2. 几何网格模数检查 (规范 02)
-			if (module.Width <= 0 || module.Height <= 0)
-			{
-				entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 的尺寸非法：Width={module.Width}, Height={module.Height}（宽高必须大于等于 1）！"));
-				hasFatalError = true;
-			}
-			else if (module.Width > 8 || module.Height > 8)
-			{
-				entries.Add(new ValidationEntry(ValidationSeverity.Warning, $"构件 [{module.Id}] 尺寸过大 ({module.Width}x{module.Height})，超过了 8x8 推荐上限。"));
-			}
-
-			// 3. 物理属性合理性检查
-			if (module.Mass <= 0.0f)
-			{
-				entries.Add(new ValidationEntry(ValidationSeverity.Warning, $"构件 [{module.Id}] 质量 <= 0，已自动修正为默认质量 1.0t。"));
-				module.Mass = 1.0f;
-			}
-
-			if (module.BaseHp <= 0.0f)
-			{
-				entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 基础耐久 BaseHp 必须大于 0！"));
-				hasFatalError = true;
-			}
-
-			// 4. 引脚对齐与越界检查 (规范 03)
-			if (module.Pins != null && module.Pins.Length > 0)
-			{
-				HashSet<string> pinIdSet = new();
-				HashSet<Vector2I> pinCoordSet = new();
-
-				foreach (var pin in module.Pins)
-				{
-					// 4.1 引脚 ID 唯一性检查
-					if (string.IsNullOrWhiteSpace(pin.PinId))
-					{
-						entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 存在未命名的引脚！"));
-						hasFatalError = true;
-					}
-					else if (!pinIdSet.Add(pin.PinId))
-					{
-						entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 存在重复的 PinId: [{pin.PinId}]！"));
-						hasFatalError = true;
-					}
-
-					// 4.2 引脚坐标是否落在构件网格边界内 [0, Width-1] x [0, Height-1]
-					if (pin.LocalGridX < 0 || pin.LocalGridX >= module.Width ||
-						pin.LocalGridY < 0 || pin.LocalGridY >= module.Height)
-					{
-						entries.Add(new ValidationEntry(ValidationSeverity.Error, 
-							$"构件 [{module.Id}] 的引脚 [{pin.PinId}] 坐标越界！坐标: ({pin.LocalGridX}, {pin.LocalGridY})，构件尺寸: {module.Width}x{module.Height}。"));
-						hasFatalError = true;
-					}
-
-					// 4.3 同一格不能有重叠引脚
-					Vector2I coord = new(pin.LocalGridX, pin.LocalGridY);
-					if (!pinCoordSet.Add(coord))
-					{
-						entries.Add(new ValidationEntry(ValidationSeverity.Warning, 
-							$"构件 [{module.Id}] 在局部坐标 ({pin.LocalGridX}, {pin.LocalGridY}) 存在多个重叠引脚。"));
-					}
-
-					// 4.4 引脚方向有效性检查
-					if (pin.Type != "IN" && pin.Type != "OUT")
-					{
-						entries.Add(new ValidationEntry(ValidationSeverity.Error, 
-							$"构件 [{module.Id}] 引脚 [{pin.PinId}] 的 Type [{pin.Type}] 非法！必须是 'IN' 或 'OUT'。"));
-						hasFatalError = true;
-					}
-				}
-			}
-
-			// 5. 打印汇总日志
-			if (entries.Count > 0)
-			{
-				foreach (var entry in entries)
-				{
-					string colorTag = entry.Severity switch
-					{
-						ValidationSeverity.Error => "red",
-						ValidationSeverity.Warning => "yellow",
-						_ => "white"
-					};
-
-					GD.PrintRich($"[color={colorTag}][DataValidator:{entry.Severity}] 文件 [{sourceFilePath}] -> {entry.Message}[/color]");
-				}
-			}
-
-			return !hasFatalError;
-		}
-	}
-}
 </file>
 
 <file path="Scripts/Data/Validation/DataValidator.cs.uid">
@@ -12077,81 +13914,6 @@ namespace BreakerProtocol.Test
 uid://c8su6kk82idcf
 </file>
 
-<file path="Scripts/Test/Test_Task03.cs">
-using Godot;
-using BreakerProtocol.Core;
-
-namespace BreakerProtocol.Test
-{
-	/// <summary>
-	/// TASK-03 交互式热重载验证场景
-	/// 实时显示当前注册表中的磁轨炮参数，直观验证外部 JSON 修改后瞬间生效
-	/// </summary>
-	public partial class Test_Task03 : Control
-	{
-		private Label _infoLabel = null!;
-		private Label _tipsLabel = null!;
-
-		public override void _Ready()
-		{
-			// 1. 创建 UI 显示面板
-			_infoLabel = new Label
-			{
-				Position = new Vector2(50, 50),
-				Size = new Vector2(800, 400)
-			};
-			_infoLabel.AddThemeFontSizeOverride("font_size", 20);
-			_infoLabel.AddThemeColorOverride("font_color", new Color(0.2f, 1.0f, 0.4f));
-			AddChild(_infoLabel);
-
-			_tipsLabel = new Label
-			{
-				Position = new Vector2(50, 480),
-				Size = new Vector2(800, 100),
-				Text = "【热重载实时测试指南】\n" +
-					   "1. 保持游戏窗口运行；\n" +
-					   "2. 打开 core_data/modules/heavy_railgun.json；\n" +
-					   "3. 修改 'mass' (比如改为 99.0) 或 'name' 并保存 (Ctrl+S)；\n" +
-                       "4. 观察上方数据面板是否瞬间发生变化！"
-			};
-			_tipsLabel.AddThemeFontSizeOverride("font_size", 16);
-			_tipsLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.9f, 0.3f));
-			AddChild(_tipsLabel);
-
-			// 2. 监听全局热重载信号
-			DataManager.Instance.DataReloaded += RefreshDisplay;
-
-			// 3. 初始刷新
-			RefreshDisplay();
-		}
-
-		private void RefreshDisplay()
-		{
-			if (DataManager.Instance.Modules.TryGet("hf_wep_railgun_h", out var railgun))
-			{
-				_infoLabel.Text = $"【《断路协议》TASK-03 构件热重载实时监控】\n" +
-								  $"------------------------------------------------------------\n" +
-								  $"构件 ID:      {railgun!.Id}\n" +
-								  $"显示名称:    {railgun.Name}\n" +
-								  $"所属阵营:    {railgun.Faction}\n" +
-								  $"构件尺寸:    {railgun.Width} x {railgun.Height} GU\n" +
-								  $"装载质量:    {railgun.Mass:F1} 吨\n" +
-								  $"基础耐久:    {railgun.BaseHp:F0} HP\n" +
-								  $"装甲抗性:    {railgun.ArmorResistance:F1}\n" +
-								  $"引脚数量:    {railgun.Pins.Length} 个\n" +
-								  $"更新时间:    {System.DateTime.Now:HH:mm:ss.fff}\n" +
-								  $"------------------------------------------------------------\n" +
-								  $"状态: [color=green]热重载监听器运行中 (Ready)[/color]";
-			}
-			else
-			{
-				_infoLabel.Text = "[✘] 未能查询到 hf_wep_railgun_h！";
-			}
-		}
-	}
-}
-</file>
-
 <file path="Scripts/Test/Test_Task03.cs.uid">
 uid://5gpaxpj177mw
 </file>
@@ -17071,191 +18833,6 @@ namespace BreakerProtocol.Test
 uid://baukwsbnsmlu8
 </file>
 
-<file path="Scripts/Test/Test_Task32.cs">
-using Godot;
-using BreakerProtocol.Camera;
-using BreakerProtocol.Combat.Effects;
-using BreakerProtocol.Combat.Projectiles;
-using BreakerProtocol.Core;
-using BreakerProtocol.Data;
-using BreakerProtocol.Data.Models;
-using BreakerProtocol.Ship;
-using BreakerProtocol.UI.Events;
-using BreakerProtocol.World.Economy;
-using BreakerProtocol.World.Events;
-
-namespace BreakerProtocol.Test
-{
-	/// <summary>
-	/// TASK-32 交互式验证场景：深空随机异象事件机与多分支文本交互树演练场
-	/// </summary>
-	public partial class Test_Task32 : Node2D
-	{
-		private ShipEntity _playerShip = null!;
-		private CombatCameraController _camera = null!;
-		private JuiceManager _juice = null!;
-		private VfxManager _vfx = null!;
-		private BulletManager _bulletManager = null!;
-		private SpaceEventDialogueUI _eventUI = null!;
-		private RichTextLabel _hudLabel = null!;
-
-		public override void _Ready()
-		{
-			_juice = new JuiceManager { Name = "JuiceManager" };
-			AddChild(_juice);
-
-			_vfx = new VfxManager { Name = "VfxManager" };
-			AddChild(_vfx);
-
-			_bulletManager = new BulletManager { Name = "BulletManager" };
-			AddChild(_bulletManager);
-
-			// 1. 初始化经济系统 (初始 150 废料与 1 算力核心)
-			PlayerEconomyManager.Instance.Reset(initialScraps: 150, initialCores: 1);
-
-			// 2. 生成玩家战舰
-			_playerShip = new ShipEntity
-			{
-				Name = "PlayerCruiser",
-				Position = Vector2.Zero
-			};
-			_playerShip.AddToGroup("Player");
-			_playerShip.AddToGroup("Ship");
-			AddChild(_playerShip);
-
-			if (DataManager.Instance.Blueprints.TryGet("bp_hf_m_anvil", out var anvilBp))
-			{
-				ShipBlueprintLoader.ApplyBlueprint(_playerShip, anvilBp!);
-			}
-
-			// 3. 摄像机
-			_camera = new CombatCameraController
-			{
-				TargetShip = _playerShip
-			};
-			AddChild(_camera);
-			_juice.BindCamera(_camera);
-
-			CreateUI();
-
-			// 默认触发第 2 个事件 (包含 60 废料消耗，方便测试)
-			TriggerEvent("ev_biohazard_smuggler");
-		}
-
-		private void CreateUI()
-		{
-			var canvasLayer = new CanvasLayer();
-			AddChild(canvasLayer);
-
-			_eventUI = new SpaceEventDialogueUI();
-			canvasLayer.AddChild(_eventUI);
-
-			_hudLabel = new RichTextLabel
-			{
-				Position = new Vector2(25, 10),
-				Size = new Vector2(1230, 52),
-				BbcodeEnabled = true,
-				MouseFilter = Control.MouseFilterEnum.Ignore
-			};
-			_hudLabel.AddThemeFontSizeOverride("normal_font_size", 13);
-			canvasLayer.AddChild(_hudLabel);
-		}
-
-		private void TriggerEvent(string eventId)
-		{
-			if (SpaceEventDatabase.Events.TryGetValue(eventId, out var ev))
-			{
-				_eventUI.OpenEvent(ev, _playerShip);
-			}
-		}
-
-		public override void _Process(double delta)
-		{
-			// [按 1~5 键]: 切换 5 大经典异象
-			if (Input.IsKeyPressed(Key.Key1)) TriggerEvent("ev_pioneer_derelict");
-			else if (Input.IsKeyPressed(Key.Key2)) TriggerEvent("ev_biohazard_smuggler");
-			else if (Input.IsKeyPressed(Key.Key3)) TriggerEvent("ev_mech_cultist");
-			else if (Input.IsKeyPressed(Key.Key4)) TriggerEvent("ev_pirate_minefield");
-			else if (Input.IsKeyPressed(Key.Key5)) TriggerEvent("ev_solar_flare");
-
-			// [按 R 键]: 随机触发异象事件
-			if (Input.IsKeyPressed(Key.R))
-			{
-				_eventUI.OpenEvent(SpaceEventDatabase.GetRandomEvent(), _playerShip);
-			}
-
-			// [按 - 键]: 废料清零 (测试置灰拦截与禁用光标)
-			if (Input.IsKeyPressed(Key.Minus) || Input.IsKeyPressed(Key.KpSubtract))
-			{
-				PlayerEconomyManager.Instance.Reset(0, 0);
-			}
-
-			// [按 + 键]: 注入 100 废料
-			if (Input.IsKeyPressed(Key.Equal) || Input.IsKeyPressed(Key.KpAdd))
-			{
-				PlayerEconomyManager.Instance.AddScraps(100);
-			}
-
-			// [按 0 键]: 战舰自损 -150 HP (测试维修效果)
-			if (Input.IsKeyPressed(Key.Key0))
-			{
-				foreach (var m in _playerShip.Grid.Modules)
-				{
-					if (!m.IsDestroyed)
-					{
-						m.CurrentHp = Mathf.Max(20.0f, m.CurrentHp - 150.0f);
-						_playerShip.OnModuleDamaged(m, 150.0f);
-						break;
-					}
-				}
-			}
-
-			// [按 F 键]: 开启强制必失败模式 (100% Failure)
-			if (Input.IsKeyPressed(Key.F))
-			{
-				_eventUI.DebugForceMode = 2;
-			}
-
-			// [按 S 键]: 开启强制必成功模式 (100% Success)
-			if (Input.IsKeyPressed(Key.S))
-			{
-				_eventUI.DebugForceMode = 1;
-			}
-
-			UpdateHUD();
-		}
-
-		private void UpdateHUD()
-		{
-			double fps = Engine.GetFramesPerSecond();
-			float curHp = 0, maxHp = 0;
-			foreach (var m in _playerShip.Grid.Modules)
-			{
-				if (!m.IsDestroyed)
-				{
-					curHp += m.CurrentHp;
-					maxHp += m.MaxHp;
-				}
-			}
-
-			string modeStr = _eventUI.DebugForceMode switch
-			{
-				1 => "[color=green]【强制必成功】[/color]",
-				2 => "[color=red]【强制必失败】[/color]",
-				_ => "[color=yellow]【常规概率】[/color]"
-			};
-
-			DisplayServer.WindowSetTitle($"《断路协议》| 异象事件终端 | 帧率: {fps:F0} FPS | 废料: {PlayerEconomyManager.Instance.Scraps} ⚙️ | 耐久: {curHp:F0}/{maxHp:F0} HP");
-
-			_hudLabel.Text = $"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
-							 $"[b][color=yellow]【TASK-32 异象演练场】[/color][/b] " +
-							 $"废料: [color=gold]{PlayerEconomyManager.Instance.Scraps} ⚙[/color] | 核心: [color=cyan]{PlayerEconomyManager.Instance.ComputeCores} 💠[/color] | 耐久: [color=lightgreen]{curHp:F0}/{maxHp:F0} HP[/color] | 判定模式: {modeStr}\n" +
-							 $"[调试指令]: [b][color=white][1~5键]: 切换事件 | [-键]: 清空废料至0(测置灰) | [+键]: +100废料 | [0键]: 战舰自损150HP | [F键]: 强制失败 | [S键]: 强制成功[/color][/b]";
-		}
-	}
-}
-</file>
-
 <file path="Scripts/Test/Test_Task32.cs.uid">
 uid://c8fbohd0nw5aa
 </file>
@@ -18643,6 +20220,895 @@ namespace BreakerProtocol.Test
 uid://oebcnqsi2nl6
 </file>
 
+<file path="Scripts/Test/Test_Task39.cs">
+using System.Linq;
+using Godot;
+using BreakerProtocol.Camera;
+using BreakerProtocol.Combat.Effects;
+using BreakerProtocol.Combat.Projectiles;
+using BreakerProtocol.Core;
+using BreakerProtocol.Ship;
+using BreakerProtocol.UI.Events;
+using BreakerProtocol.UI.Market;
+using BreakerProtocol.World.Economy;
+using BreakerProtocol.World.Events;
+using BreakerProtocol.World.Market;
+
+namespace BreakerProtocol.Test
+{
+	/// <summary>
+	/// TASK-39 演练场：全域游戏规则与外循环 JSON 数据驱动解耦验证中枢
+	/// </summary>
+	public partial class Test_Task39 : Node2D
+	{
+		private ShipEntity _playerShip = null!;
+		private CombatCameraController _camera = null!;
+		private BulletManager _bulletManager = null!;
+		private JuiceManager _juice = null!;
+		private VfxManager _vfx = null!;
+
+		private SpaceEventDialogueUI _eventUI = null!;
+		private BlackMarketShopUI _marketUI = null!;
+		private RichTextLabel _hudLabel = null!;
+
+		public override void _Ready()
+		{
+			_juice = new JuiceManager { Name = "JuiceManager" };
+			AddChild(_juice);
+
+			_vfx = new VfxManager { Name = "VfxManager" };
+			AddChild(_vfx);
+
+			_bulletManager = new BulletManager { Name = "BulletManager" };
+			AddChild(_bulletManager);
+
+			// 1. 初始化经济与玩家战舰
+			PlayerEconomyManager.Instance.Reset(initialScraps: 500, initialCores: 3);
+
+			_playerShip = new ShipEntity
+			{
+				Name = "PlayerShip_T39",
+				Position = Vector2.Zero
+			};
+			_playerShip.AddToGroup("Player");
+			_playerShip.AddToGroup("Ship");
+			AddChild(_playerShip);
+
+			if (DataManager.Instance.Blueprints.TryGet("bp_hf_m_anvil", out var bp))
+			{
+				ShipBlueprintLoader.ApplyBlueprint(_playerShip, bp!);
+			}
+
+			// 2. 摄像机
+			_camera = new CombatCameraController { TargetShip = _playerShip };
+			AddChild(_camera);
+			_juice.BindCamera(_camera);
+
+			// 3. 构建全息 UI
+			CreateUI();
+		}
+
+		private void CreateUI()
+		{
+			var canvas = new CanvasLayer();
+			AddChild(canvas);
+
+			_eventUI = new SpaceEventDialogueUI();
+			canvas.AddChild(_eventUI);
+
+			_marketUI = new BlackMarketShopUI();
+			_marketUI.Initialize(_playerShip);
+			_marketUI.Visible = false;
+			canvas.AddChild(_marketUI);
+
+			_hudLabel = new RichTextLabel
+			{
+				Position = new Vector2(30, 20),
+				Size = new Vector2(1220, 260),
+				BbcodeEnabled = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			_hudLabel.AddThemeFontSizeOverride("normal_font_size", 14);
+			canvas.AddChild(_hudLabel);
+
+			UpdateHUD();
+		}
+
+		public override void _UnhandledInput(InputEvent @event)
+		{
+			if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				// [按 R 键]: 重新扫描全域 JSON 配置并热重载
+				if (ek.Keycode == Key.R)
+				{
+					DataManager.Instance.LoadAllData();
+					_marketUI.RefreshStock();
+					UpdateHUD();
+				}
+				// [按 1 键]: 触发由 JSON 加载的异象事件
+				else if (ek.Keycode == Key.Key1)
+				{
+					_marketUI.Visible = false;
+					_eventUI.OpenEvent(SpaceEventDatabase.GetRandomEvent(), _playerShip);
+				}
+				// [按 2 键]: 打开由 JSON 价格表驱动的黑市
+				else if (ek.Keycode == Key.Key2)
+				{
+					_eventUI.Visible = false;
+					_marketUI.Visible = !_marketUI.Visible;
+				}
+				// [按 + 键]: 快速增加废料
+				else if (ek.Keycode == Key.Equal || ek.Keycode == Key.KpAdd)
+				{
+					PlayerEconomyManager.Instance.AddScraps(100);
+					UpdateHUD();
+				}
+			}
+		}
+
+		public override void _Process(double delta)
+		{
+			// 鼠标左键开火 (UI 关闭时)
+			if (Godot.Input.IsMouseButtonPressed(MouseButton.Left) && !_eventUI.Visible && !_marketUI.Visible)
+			{
+				foreach (var weaponId in _playerShip.Pulses.WeaponBuffers.Keys)
+				{
+					_playerShip.Pulses.TriggerWeaponFire(weaponId, out _);
+				}
+			}
+		}
+
+		private void UpdateHUD()
+		{
+			var dm = DataManager.Instance;
+			var eco = PlayerEconomyManager.Instance;
+
+			_hudLabel.Text =
+				$"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
+				$"[b][color=yellow]【TASK-39 全域游戏规则与外循环 JSON 数据驱动解耦验证演练场】[/color][/b]\n" +
+				$"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
+				$"• [color=white]内存构件总数:[/color] [color=cyan]{dm.Modules.Count}[/color] 个   " +
+				$"• [color=white]预设战舰蓝图:[/color] [color=cyan]{dm.Blueprints.Count}[/color] 艘   " +
+				$"• [color=white]外部异象事件:[/color] [color=gold]{dm.Events.Count}[/color] 个\n" +
+				$"• [color=white]母港科技节点:[/color] [color=gold]{dm.Techs.Count}[/color] 项   " +
+				$"• [color=white]灾厄高危契约:[/color] [color=gold]{dm.Pacts.Count}[/color] 份   " +
+				$"• [color=white]黑市默认货架:[/color] [color=gold]{dm.MarketConfig.DefaultStockCount}[/color] 格\n" +
+				$"• [color=white]当前玩家资产:[/color] [color=yellow]{eco.Scraps} ⚙ 废料[/color] | [color=cyan]{eco.ComputeCores} 💠 算力核心[/color]\n" +
+				$"------------------------------------------------------------------------------------\n" +
+				$"[color=yellow][数据驱动热重载测试指南][/color]:\n" +
+				$"1. [按 1 键]: 呼出外部 JSON 驱动的【深空随机异象多分支树】；\n" +
+				$"2. [按 2 键]: 开闭外部 JSON 价格表驱动的【废土黑市交易终端】；\n" +
+				$"3. [切出窗口]: 修改 core_data/events/ 或 core_data/markets/ 下的 JSON 参数，\n" +
+				$"   切回游戏 [按 R 键] 立即热加载生效，体验 100% 零代码全域数据解耦！";
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Test/Test_Task39.cs.uid">
+uid://b6yj0d8c6j71r
+</file>
+
+<file path="Scripts/Test/Test_Task40.cs">
+using System.Collections.Generic;
+using Godot;
+using BreakerProtocol.Camera;
+using BreakerProtocol.Combat.Effects;
+using BreakerProtocol.Combat.Projectiles;
+using BreakerProtocol.Core;
+using BreakerProtocol.Ship;
+using BreakerProtocol.World.Director;
+using BreakerProtocol.World.Economy;
+
+namespace BreakerProtocol.Test
+{
+	/// <summary>
+	/// TASK-40 演练场：战利品加权掉落池与战役遭遇生成验证中枢
+	/// </summary>
+	public partial class Test_Task40 : Node2D
+	{
+		private ShipEntity _playerShip = null!;
+		private CombatCameraController _camera = null!;
+		private BulletManager _bulletManager = null!;
+		private JuiceManager _juice = null!;
+		private VfxManager _vfx = null!;
+		private RichTextLabel _hudLabel = null!;
+
+		private readonly List<ShipEntity> _activeEnemies = new();
+		private string _lastLootLog = "尚未执行掉落抽取。";
+
+		public override void _Ready()
+		{
+			_juice = new JuiceManager { Name = "JuiceManager" };
+			AddChild(_juice);
+
+			_vfx = new VfxManager { Name = "VfxManager" };
+			AddChild(_vfx);
+
+			_bulletManager = new BulletManager { Name = "BulletManager" };
+			AddChild(_bulletManager);
+
+			PlayerEconomyManager.Instance.Reset(initialScraps: 100, initialCores: 0);
+
+			// 1. 创建玩家战舰
+			_playerShip = new ShipEntity
+			{
+				Name = "PlayerShip_T40",
+				Position = Vector2.Zero
+			};
+			_playerShip.AddToGroup("Player");
+			_playerShip.AddToGroup("Ship");
+			AddChild(_playerShip);
+
+			if (DataManager.Instance.Blueprints.TryGet("bp_hf_m_anvil", out var bp))
+			{
+				ShipBlueprintLoader.ApplyBlueprint(_playerShip, bp!);
+			}
+
+			// 2. 摄像机
+			_camera = new CombatCameraController { TargetShip = _playerShip };
+			AddChild(_camera);
+			_juice.BindCamera(_camera);
+
+			CreateUI();
+		}
+
+		private void CreateUI()
+		{
+			var canvas = new CanvasLayer();
+			AddChild(canvas);
+
+			_hudLabel = new RichTextLabel
+			{
+				Position = new Vector2(30, 20),
+				Size = new Vector2(1220, 320),
+				BbcodeEnabled = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			_hudLabel.AddThemeFontSizeOverride("normal_font_size", 14);
+			canvas.AddChild(_hudLabel);
+
+			UpdateHUD();
+		}
+
+		public override void _UnhandledInput(InputEvent @event)
+		{
+			if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				// [按 1 键]: 抽取轻型机掉落池 (drop_enemy_light)
+				if (ek.Keycode == Key.Key1)
+				{
+					TestDrop("drop_enemy_light");
+				}
+				// [按 2 键]: 抽取精英旗舰掉落池 (drop_enemy_elite)
+				else if (ek.Keycode == Key.Key2)
+				{
+					TestDrop("drop_enemy_elite");
+				}
+				// [按 3 键]: 抽取 Boss 掉落池 (drop_boss_titan)
+				else if (ek.Keycode == Key.Key3)
+				{
+					TestDrop("drop_boss_titan");
+				}
+				// [按 4 键]: 刷出一波常规遭遇战舰队 (enc_combat_strike_group)
+				else if (ek.Keycode == Key.Key4)
+				{
+					SpawnEncounterTest("enc_combat_strike_group");
+				}
+				// [按 5 键]: 刷出虚空双子精英遭遇战 (enc_elite_syndicate_duo)
+				else if (ek.Keycode == Key.Key5)
+				{
+					SpawnEncounterTest("enc_elite_syndicate_duo");
+				}
+				// [按 C 键]: 清除所有敌舰
+				else if (ek.Keycode == Key.C)
+				{
+					ClearEnemies();
+				}
+				// [按 R 键]: 热重载 JSON
+				else if (ek.Keycode == Key.R)
+				{
+					DataManager.Instance.LoadAllData();
+					UpdateHUD();
+				}
+			}
+		}
+
+		private void TestDrop(string tableId)
+		{
+			var loot = LootDropService.RollLoot(tableId, luckMultiplier: 1.0f);
+			string modulesStr = loot.DroppedModuleIds.Count > 0 ? string.Join(", ", loot.DroppedModuleIds) : "无构件掉落";
+			_lastLootLog = $"[color=cyan]【{tableId}】[/color] 抽取结果: [color=yellow]{loot.Scraps} ⚙ 废料[/color] | [color=cyan]{loot.ComputeCores} 💠 核心[/color] | 构件: [color=lime]{modulesStr}[/color]";
+			
+			// 在玩家前方爆出实体
+			LootDropService.SpawnLootAt(this, _playerShip.Position + new Vector2(0, -100), tableId);
+			UpdateHUD();
+		}
+
+		private void SpawnEncounterTest(string encId)
+		{
+			ClearEnemies();
+			if (DataManager.Instance.Encounters.TryGet(encId, out var enc) && enc != null)
+			{
+				var ships = EncounterDirector.SpawnEncounter(this, enc, _playerShip.Position, _playerShip);
+				_activeEnemies.AddRange(ships);
+			}
+			UpdateHUD();
+		}
+
+		private void ClearEnemies()
+		{
+			foreach (var ship in _activeEnemies)
+			{
+				if (IsInstanceValid(ship)) ship.QueueFree();
+			}
+			_activeEnemies.Clear();
+		}
+
+		public override void _Process(double delta)
+		{
+			// 鼠标开火
+			if (Godot.Input.IsMouseButtonPressed(MouseButton.Left))
+			{
+				foreach (var weaponId in _playerShip.Pulses.WeaponBuffers.Keys)
+				{
+					_playerShip.Pulses.TriggerWeaponFire(weaponId, out _);
+				}
+			}
+		}
+
+		private void UpdateHUD()
+		{
+			var dm = DataManager.Instance;
+			_hudLabel.Text =
+				$"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
+				$"[b][color=yellow]【TASK-40 战利品加权掉落池与战役遭遇生成表演练场】[/color][/b]\n" +
+				$"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
+				$"• [color=white]已注册掉落池:[/color] [color=gold]{dm.DropTables.Count}[/color] 个   " +
+				$"• [color=white]已注册遭遇池:[/color] [color=gold]{dm.Encounters.Count}[/color] 个   " +
+				$"• [color=white]当前在场敌舰:[/color] [color=crimson]{_activeEnemies.Count}[/color] 艘\n" +
+				$"• [color=white]最近一次抽卡日志:[/color] {_lastLootLog}\n" +
+				$"------------------------------------------------------------------------------------\n" +
+				$"[color=yellow][数据驱动加权抽取与遭遇测试指南][/color]:\n" +
+				$"1. [按 1 / 2 / 3 键]: 分别测试【轻型战机 / 精英巡洋舰 / 泰坦 Boss】加权掉落抽取并在空间生成掉落物；\n" +
+				$"2. [按 4 / 5 键]: 测试根据 JSON 编队配置生成【重工突击队 (1巡洋+2轻艇)】或【虚空双子精英】；\n" +
+				$"3. [按 C 键]: 清除场上所有生成的敌舰；\n" +
+				$"4. [按 R 键]: 热重载全域 JSON 掉落与遭遇规则！";
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Test/Test_Task40.cs.uid">
+uid://dpj5o1sk6ka4y
+</file>
+
+<file path="Scripts/Test/Test_Task41.cs">
+using System.IO;
+using System.Linq;
+using Godot;
+using BreakerProtocol.Camera;
+using BreakerProtocol.Combat.Effects;
+using BreakerProtocol.Combat.Projectiles;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Persistence;
+using BreakerProtocol.Ship;
+using BreakerProtocol.World.Economy;
+using BreakerProtocol.World.Meta;
+using BreakerProtocol.World.Pacts;
+using BreakerProtocol.World.Sector;
+
+namespace BreakerProtocol.Test
+{
+	/// <summary>
+	/// TASK-41 演练场：战役存档、母港 Meta 进度与持久化系统验证中枢
+	/// </summary>
+	public partial class Test_Task41 : Node2D
+	{
+		private ShipEntity _playerShip = null!;
+		private CombatCameraController _camera = null!;
+		private BulletManager _bulletManager = null!;
+		private JuiceManager _juice = null!;
+		private VfxManager _vfx = null!;
+		private RichTextLabel _hudLabel = null!;
+
+		private SectorGraph _sectorGraph = null!;
+		private string _operationLog = "🚀 演练场已就绪。支持暂存战局、母港科技加点与现场 1:1 复原！";
+
+		public override void _Ready()
+		{
+			_juice = new JuiceManager { Name = "JuiceManager" };
+			AddChild(_juice);
+
+			_vfx = new VfxManager { Name = "VfxManager" };
+			AddChild(_vfx);
+
+			_bulletManager = new BulletManager { Name = "BulletManager" };
+			AddChild(_bulletManager);
+
+			// 1. 初始化经济与玩家飞船
+			PlayerEconomyManager.Instance.Reset(initialScraps: 320, initialCores: 2);
+
+			_playerShip = new ShipEntity
+			{
+				Name = "PlayerShip_T41",
+				Position = Vector2.Zero
+			};
+			_playerShip.AddToGroup("Player");
+			_playerShip.AddToGroup("Ship");
+			AddChild(_playerShip);
+
+			if (DataManager.Instance.Blueprints.TryGet("bp_hf_m_anvil", out var bp))
+			{
+				ShipBlueprintLoader.ApplyBlueprint(_playerShip, bp!);
+			}
+
+			// 2. 生成模拟星图
+			_sectorGraph = SectorMapGenerator.GenerateSector(totalColumns: 8);
+			_sectorGraph.CurrentNodeId = _sectorGraph.NodesByColumn[0][0].Id;
+			_sectorGraph.NodesByColumn[0][0].State = NodeExplorationState.Visited;
+
+			// 3. 摄像机
+			_camera = new CombatCameraController { TargetShip = _playerShip };
+			AddChild(_camera);
+			_juice.BindCamera(_camera);
+
+			CreateUI();
+		}
+
+		private void CreateUI()
+		{
+			var canvas = new CanvasLayer();
+			AddChild(canvas);
+
+			_hudLabel = new RichTextLabel
+			{
+				Position = new Vector2(30, 20),
+				Size = new Vector2(1220, 320),
+				BbcodeEnabled = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			_hudLabel.AddThemeFontSizeOverride("normal_font_size", 14);
+			canvas.AddChild(_hudLabel);
+
+			UpdateHUD();
+		}
+
+		public override void _UnhandledInput(InputEvent @event)
+		{
+			if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				// [按 1 键]: 制造战损 (随机扣减构件血量，消耗/增加废料)
+				if (ek.Keycode == Key.Key1)
+				{
+					InflictDamageAndMutate();
+				}
+				// [按 2 键]: 星图跃迁推进 (模拟下一星区)
+				else if (ek.Keycode == Key.Key2)
+				{
+					AdvanceSectorTest();
+				}
+				// [按 3 键]: 母港科技点亮并保存 Meta
+				else if (ek.Keycode == Key.Key3)
+				{
+					UnlockMetaTechTest();
+				}
+				// [按 S 键]: 执行全量存盘 (Save Run & Meta)
+				else if (ek.Keycode == Key.S)
+				{
+					bool s1 = SaveManager.Instance.SaveCurrentRun(_playerShip, _sectorGraph);
+					bool s2 = SaveManager.Instance.SaveMeta();
+					_operationLog = (s1 && s2)
+						? "[color=lime]💾 【战局+母港全量存盘成功】 SHA-256 签名已封包写入 user:// 目录下！[/color]"
+						: "[color=red]❌ 存盘失败！[/color]";
+					UpdateHUD();
+				}
+				// [按 L 键]: 从本地磁盘读取并完全复原现场
+				else if (ek.Keycode == Key.L)
+				{
+					bool r1 = SaveManager.Instance.RestoreCurrentRun(_playerShip, out var restoredGraph);
+					bool r2 = SaveManager.Instance.LoadMeta();
+					if (restoredGraph != null) _sectorGraph = restoredGraph;
+
+					_operationLog = (r1 && r2)
+						? "[color=cyan]🔄 【战局现场 100% 复原成功】 战损耐久、导线网络、星图与母港数据完全对齐！[/color]"
+						: "[color=red]❌ 读取失败或未找到存档文件！[/color]";
+					UpdateHUD();
+				}
+				// [按 X 键]: 故意破坏存档触发 SHA-256 防篡改拦截
+				else if (ek.Keycode == Key.X)
+				{
+					TamperSaveFileTest();
+				}
+				// [按 D 键]: 清除战局暂存 (模拟通关/阵亡删除)
+				else if (ek.Keycode == Key.D)
+				{
+					SaveManager.Instance.DeleteRunSave();
+					_operationLog = "[color=yellow]🗑️ 已删除局内存档 (user://current_run.json)。[/color]";
+					UpdateHUD();
+				}
+			}
+		}
+
+		private void InflictDamageAndMutate()
+		{
+			var modules = _playerShip.Grid.Modules.ToList();
+			if (modules.Count > 0)
+			{
+				var target = modules[(int)GD.RandRange(0, modules.Count - 1)];
+				target.CurrentHp = Mathf.Max(10.0f, target.CurrentHp - 60.0f);
+			}
+
+			PlayerEconomyManager.Instance.AddScraps(75);
+			_operationLog = $"[color=orange]💥 战况突变：随机构件受到损伤，当前废料: {PlayerEconomyManager.Instance.Scraps} ⚙[/color]";
+			UpdateHUD();
+		}
+
+		private void AdvanceSectorTest()
+		{
+			int nextCol = Mathf.Min(_sectorGraph.TotalColumns - 1, (int)_sectorGraph.PursuitWavefrontColumn + 2);
+			if (nextCol < _sectorGraph.TotalColumns && _sectorGraph.NodesByColumn[nextCol].Count > 0)
+			{
+				var nextNode = _sectorGraph.NodesByColumn[nextCol][0];
+				_sectorGraph.CurrentNodeId = nextNode.Id;
+				nextNode.State = NodeExplorationState.Visited;
+				_sectorGraph.PursuitWavefrontColumn += 1.0f;
+				_operationLog = $"[color=cyan]🚀 星区跃迁：抵达第 {nextCol + 1} 列【{nextNode.GetDisplayName()}】，追击线推至 {_sectorGraph.PursuitWavefrontColumn} 列！[/color]";
+			}
+			UpdateHUD();
+		}
+
+		private void UnlockMetaTechTest()
+		{
+			var meta = MetaProgressionManager.Instance;
+			meta.AddDataFragments(200);
+
+			// 查找下一个当前满足前置条件且未解锁的科技
+			var nextEligible = meta.AllTechs.Values.FirstOrDefault(t => 
+				!t.IsUnlocked && 
+				(string.IsNullOrEmpty(t.PrerequisiteId) || meta.IsUnlocked(t.PrerequisiteId))
+			);
+
+			if (nextEligible != null)
+			{
+				if (meta.UnlockTech(nextEligible.Id))
+				{
+					// 仅在内存中解锁，移除此处的自动 SaveMeta()，统一由 [S 键] 控制存盘
+					_operationLog = $"[color=gold]🔬 母港研发：内存点亮科技【{nextEligible.Name}】(未存盘，按 S 存盘，按 L 可回退)！[/color]";
+				}
+				else
+				{
+					_operationLog = $"[color=red]❌ 解锁【{nextEligible.Name}】失败！研发碎片不足 (需要 {nextEligible.Cost} 💾)。[/color]";
+				}
+			}
+			else
+			{
+				_operationLog = "[color=yellow]✨ 所有母港科技已全部解锁完毕！[/color]";
+			}
+
+			UpdateHUD();
+		}
+
+		private void TamperSaveFileTest()
+		{
+			string userDir = ProjectSettings.GlobalizePath("user://");
+			string path = Path.Combine(userDir, "current_run.json");
+			if (File.Exists(path))
+			{
+				string text = File.ReadAllText(path);
+				// 恶意修改废料数值
+				text = text.Replace("\"currentScraps\":", "\"currentScraps\": 999999, \"_tampered\":");
+				File.WriteAllText(path, text);
+				_operationLog = "[color=crimson]⚠️ [恶意篡改模拟] 已直接修改 current_run.json 废料数值，现在按 [L] 键测试校验器！[/color]";
+			}
+			else
+			{
+				_operationLog = "[color=yellow]请先按 [S 键] 存盘后再测试篡改！[/color]";
+			}
+			UpdateHUD();
+		}
+
+		public override void _Process(double delta)
+		{
+			// 鼠标开火
+			if (Godot.Input.IsMouseButtonPressed(MouseButton.Left))
+			{
+				foreach (var weaponId in _playerShip.Pulses.WeaponBuffers.Keys)
+				{
+					_playerShip.Pulses.TriggerWeaponFire(weaponId, out _);
+				}
+			}
+		}
+
+		private void UpdateHUD()
+		{
+			var eco = PlayerEconomyManager.Instance;
+			var meta = MetaProgressionManager.Instance;
+
+			float curHp = 0, maxHp = 0;
+			foreach (var m in _playerShip.Grid.Modules)
+			{
+				if (!m.IsDestroyed)
+				{
+					curHp += m.CurrentHp;
+					maxHp += m.MaxHp;
+				}
+			}
+
+			_hudLabel.Text =
+				$"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
+				$"[b][color=yellow]【TASK-41 战役存档、母港 Meta 进度与持久化系统演练场】[/color][/b]\n" +
+				$"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
+				$"• [color=white]战舰总耐久:[/color] [color=lightgreen]{curHp:F0} / {maxHp:F0} HP[/color]   " +
+				$"• [color=white]局内资产:[/color] [color=yellow]{eco.Scraps} ⚙ 废料[/color] | [color=cyan]{eco.ComputeCores} 💠 核心[/color]   " +
+				$"• [color=white]当前星图位置:[/color] [color=gold]{_sectorGraph.CurrentNodeId ?? "起始"}[/color]\n" +
+				$"• [color=white]母港研发碎片:[/color] [color=cyan]{meta.DataFragments} 💾[/color]   " +
+				$"• [color=white]已激活科技:[/color] [color=gold]{meta.AllTechs.Values.Count(t => t.IsUnlocked)} / {meta.AllTechs.Count}[/color] 项   " +
+				$"• [color=white]局内存档状态:[/color] {(SaveManager.Instance.HasActiveRunSave() ? "[color=green]存在暂存 (user://)[/color]" : "[color=gray]无暂存[/color]")}\n" +
+				$"• [color=white]最近操作日志:[/color] {_operationLog}\n" +
+				$"------------------------------------------------------------------------------------\n" +
+				$"[color=yellow][持久化安全测试指南][/color]:\n" +
+				$"1. [按 1 键]: 制造构件战损与资产变动 | [按 2 键]: 推进星区列与追击波前；\n" +
+				$"2. [按 3 键]: 获得碎片并点亮母港科技 | [按 S 键]: 触发全量保存 (生成 SHA-256 签名信封)；\n" +
+				$"3. [按 L 键]: 从磁盘 100% 复原现场战损与星图 | [按 X 键]: 模拟外部篡改测试防爆拦截！";
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Test/Test_Task41.cs.uid">
+uid://dky266qswrjpn
+</file>
+
+<file path="Scripts/Test/Test_Task42.cs">
+using Godot;
+using BreakerProtocol.Camera;
+using BreakerProtocol.Combat.Effects;
+using BreakerProtocol.Combat.Projectiles;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Persistence;
+using BreakerProtocol.Ship;
+using BreakerProtocol.UI.CombatHUD;
+using BreakerProtocol.UI.Events;
+using BreakerProtocol.UI.Market;
+using BreakerProtocol.UI.Menu;
+using BreakerProtocol.UI.Meta;
+using BreakerProtocol.UI.Settlement;
+using BreakerProtocol.World.Director;
+using BreakerProtocol.World.Economy;
+using BreakerProtocol.World.Events;
+using BreakerProtocol.World.Sector;
+using BreakerProtocol.World.Settlement;
+
+namespace BreakerProtocol.Test
+{
+	/// <summary>
+	/// TASK-42 演练场：全局游戏状态机与场景无缝过渡系统验证中枢
+	/// </summary>
+	public partial class Test_Task42 : Node2D
+	{
+		private ShipEntity _playerShip = null!;
+		private CombatCameraController _camera = null!;
+		private BulletManager _bulletManager = null!;
+		private JuiceManager _juice = null!;
+		private VfxManager _vfx = null!;
+		private SceneTransitionManager _transitionManager = null!;
+
+		// 全景 UI
+		private MainMenuUI _mainMenuUI = null!;
+		private SectorMapUI _mapUI = null!;
+		private BlackMarketShopUI _marketUI = null!;
+		private SpaceEventDialogueUI _eventUI = null!;
+		private MetaTechTreeUI _metaTechUI = null!;
+		private RunSummaryUI _summaryUI = null!;
+		private CombatHUD _combatHUD = null!;
+		private RichTextLabel _topBannerLabel = null!;
+
+		public override void _Ready()
+		{
+			_juice = new JuiceManager { Name = "JuiceManager" };
+			AddChild(_juice);
+
+			_vfx = new VfxManager { Name = "VfxManager" };
+			AddChild(_vfx);
+
+			_bulletManager = new BulletManager { Name = "BulletManager" };
+			AddChild(_bulletManager);
+
+			// 1. 初始化转场管理器
+			_transitionManager = new SceneTransitionManager();
+			AddChild(_transitionManager);
+
+			// 2. 初始化战舰与摄像机
+			PlayerEconomyManager.Instance.Reset(initialScraps: 200, initialCores: 1);
+			_playerShip = new ShipEntity
+			{
+				Name = "PlayerShip_T42",
+				Position = Vector2.Zero
+			};
+			_playerShip.AddToGroup("Player");
+			_playerShip.AddToGroup("Ship");
+			AddChild(_playerShip);
+
+			if (DataManager.Instance.Blueprints.TryGet("bp_hf_m_anvil", out var bp))
+			{
+				ShipBlueprintLoader.ApplyBlueprint(_playerShip, bp!);
+			}
+
+			_camera = new CombatCameraController { TargetShip = _playerShip };
+			AddChild(_camera);
+			_juice.BindCamera(_camera);
+
+			// 3. 构建 UI 并绑定状态机
+			CreateAllUIs();
+			BindGameStateManager();
+
+			// 4. 初始直接切入主菜单 (关闭多余 HUD)
+			GameStateManager.Instance.SwitchState(GameState.MainMenu, false);
+		}
+
+		private void CreateAllUIs()
+		{
+			var canvas = new CanvasLayer { Layer = 10 };
+			AddChild(canvas);
+
+			_combatHUD = new CombatHUD { TargetShip = _playerShip };
+			_combatHUD.Visible = false;
+			canvas.AddChild(_combatHUD);
+
+			_mapUI = new SectorMapUI();
+			_mapUI.OnNodeSelected += HandleNodeSelectedOnMap;
+			_mapUI.Visible = false;
+			canvas.AddChild(_mapUI);
+
+			_marketUI = new BlackMarketShopUI();
+			_marketUI.Visible = false;
+			canvas.AddChild(_marketUI);
+
+			_eventUI = new SpaceEventDialogueUI();
+			_eventUI.OnEventResolved += (outcome) => GameStateManager.Instance.SwitchState(GameState.SectorMap);
+			_eventUI.Visible = false;
+			canvas.AddChild(_eventUI);
+
+			_metaTechUI = new MetaTechTreeUI();
+			_metaTechUI.Visible = false;
+			canvas.AddChild(_metaTechUI);
+
+			_summaryUI = new RunSummaryUI();
+			_summaryUI.OnNavigateToMetaTech += () => GameStateManager.Instance.SwitchState(GameState.Hangar);
+			_summaryUI.OnStartNewRun += () => GameStateManager.Instance.StartNewRun();
+			_summaryUI.Visible = false;
+			canvas.AddChild(_summaryUI);
+
+			// 顶部全息测试快捷键提示栏
+			_topBannerLabel = new RichTextLabel
+			{
+				Position = new Vector2(20, 10),
+				Size = new Vector2(1240, 60),
+				BbcodeEnabled = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			_topBannerLabel.AddThemeFontSizeOverride("normal_font_size", 13);
+			canvas.AddChild(_topBannerLabel);
+
+			// 主菜单置于最顶层
+			_mainMenuUI = new MainMenuUI();
+			_mainMenuUI.OnNewRunRequested += () => GameStateManager.Instance.StartNewRun();
+			_mainMenuUI.OnContinueRunRequested += () => GameStateManager.Instance.ContinueSavedRun();
+			_mainMenuUI.OnHangarRequested += () => GameStateManager.Instance.SwitchState(GameState.Hangar);
+			canvas.AddChild(_mainMenuUI);
+		}
+
+		private void BindGameStateManager()
+		{
+			var gsm = GameStateManager.Instance;
+			gsm.PlayerShip = _playerShip;
+			gsm.MainMenuUI = _mainMenuUI;
+			gsm.MapUI = _mapUI;
+			gsm.MarketUI = _marketUI;
+			gsm.EventUI = _eventUI;
+			gsm.MetaTechUI = _metaTechUI;
+			gsm.SummaryUI = _summaryUI;
+			gsm.CombatHUD = _combatHUD;
+		}
+
+		private void HandleNodeSelectedOnMap(SectorNode node)
+		{
+			switch (node.Type)
+			{
+				case SectorNodeType.Market:
+					GameStateManager.Instance.SwitchState(GameState.BlackMarket, true, "✦ 对接废土黑市空间站 ✦");
+					break;
+				case SectorNodeType.Event:
+					_eventUI.OpenEvent(SpaceEventDatabase.GetRandomEvent(), _playerShip);
+					GameStateManager.Instance.SwitchState(GameState.AnomalyDialogue, true, "✦ 扫描到深空异象信标 ✦");
+					break;
+				default:
+					GameStateManager.Instance.SwitchState(GameState.Combat, true, "✦ 遭遇敌方巡逻舰队 ✦");
+					break;
+			}
+		}
+
+		public override void _UnhandledInput(InputEvent @event)
+		{
+			if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				var gsm = GameStateManager.Instance;
+
+				if (ek.Keycode == Key.Escape)
+				{
+					if (gsm.CurrentState == GameState.MainMenu)
+						gsm.SwitchState(GameState.SectorMap);
+					else
+						gsm.SwitchState(GameState.MainMenu);
+				}
+				else if (ek.Keycode == Key.M)
+				{
+					gsm.SwitchState(GameState.SectorMap);
+				}
+				else if (ek.Keycode == Key.B)
+				{
+					gsm.SwitchState(GameState.BlackMarket);
+				}
+				else if (ek.Keycode == Key.H)
+				{
+					gsm.SwitchState(GameState.Hangar);
+				}
+				else if (ek.Keycode == Key.V)
+				{
+					gsm.TriggerGameOver(RunEndingType.Victory);
+				}
+				else if (ek.Keycode == Key.K)
+				{
+					gsm.TriggerGameOver(RunEndingType.Defeat_Destroyed);
+				}
+			}
+		}
+
+		public override void _Process(double delta)
+		{
+			if (Godot.Input.IsMouseButtonPressed(MouseButton.Left) && GameStateManager.Instance.CurrentState == GameState.Combat)
+			{
+				foreach (var weaponId in _playerShip.Pulses.WeaponBuffers.Keys)
+				{
+					_playerShip.Pulses.TriggerWeaponFire(weaponId, out _);
+				}
+			}
+
+			UpdateBanner();
+		}
+
+		private void UpdateBanner()
+		{
+			var gsm = GameStateManager.Instance;
+			var eco = PlayerEconomyManager.Instance;
+
+			string stateName = gsm.CurrentState switch
+			{
+				GameState.MainMenu        => "[color=cyan]主标题菜单 (MainMenu)[/color]",
+				GameState.Hangar          => "[color=gold]母港科研局 (Hangar)[/color]",
+				GameState.SectorMap       => "[color=lime]星区跃迁星图 (SectorMap)[/color]",
+				GameState.Combat          => "[color=crimson]战术空战模式 (Combat)[/color]",
+				GameState.BlackMarket     => "[color=yellow]废土黑市终端 (BlackMarket)[/color]",
+				GameState.AnomalyDialogue => "[color=magenta]深空异象日志 (AnomalyDialogue)[/color]",
+				GameState.RunSettlement   => "[color=green]战役综合结算 (RunSettlement)[/color]",
+				_                         => "[color=white]未知[/color]"
+			};
+
+			_topBannerLabel.Text =
+				$"[b][color=yellow]【TASK-42 状态机测试】[/color][/b] 状态: {stateName} | " +
+				$"资产: [color=yellow]{eco.Scraps} ⚙[/color] [color=cyan]{eco.ComputeCores} 💠[/color] | " +
+				$"局内存档: {(SaveManager.Instance.HasActiveRunSave() ? "[color=lime]已保存[/color]" : "[color=gray]无[/color]")}\n" +
+				$"[color=gray][快捷键]: ESC 主菜单 | M 星图 | B 黑市 | H 母港科研 | V 胜利结算 | K 阵亡结算[/color]";
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Test/Test_Task42.cs.uid">
+uid://17efys3jk7du
+</file>
+
 <file path="Scripts/Test/TestPlayerDummy.cs">
 using Godot;
 
@@ -19929,6 +22395,190 @@ namespace BreakerProtocol.UI.Market
 uid://bcpmsca3h13bp
 </file>
 
+<file path="Scripts/UI/Menu/MainMenuUI.cs">
+using System;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Persistence;
+
+namespace BreakerProtocol.UI.Menu
+{
+	/// <summary>
+	/// 游戏主标题菜单全息界面 (支持视口自适应与全功能流转)
+	/// </summary>
+	public partial class MainMenuUI : Control
+	{
+		public event Action? OnNewRunRequested;
+		public event Action? OnContinueRunRequested;
+		public event Action? OnHangarRequested;
+		public event Action? OnSandboxRequested;
+
+		private int _hoveredButtonIndex = -1;
+		private Vector2 _currentMousePos = Vector2.Zero;
+
+		public override void _Ready()
+		{
+			SetAnchorsPreset(LayoutPreset.FullRect);
+			GrowHorizontal = GrowDirection.Both;
+			GrowVertical = GrowDirection.Both;
+			MouseFilter = MouseFilterEnum.Stop;
+
+			// 强制初始化视口全屏尺寸
+			Vector2 vpSize = GetViewportRect().Size;
+			CustomMinimumSize = vpSize;
+			Size = vpSize;
+		}
+
+		public override void _Process(double delta)
+		{
+			if (!Visible) return;
+
+			// 动态同步视口尺寸
+			Vector2 vpSize = GetViewportRect().Size;
+			if (vpSize.X > 100 && vpSize.Y > 100 && Size != vpSize)
+			{
+				Size = vpSize;
+				CustomMinimumSize = vpSize;
+			}
+
+			_currentMousePos = GetLocalMousePosition();
+			UpdateHoverState(_currentMousePos);
+			QueueRedraw();
+		}
+
+		private void UpdateHoverState(Vector2 mousePos)
+		{
+			_hoveredButtonIndex = -1;
+			for (int i = 0; i < 5; i++)
+			{
+				if (GetMenuButtonRect(i).HasPoint(mousePos))
+				{
+					_hoveredButtonIndex = i;
+					break;
+				}
+			}
+
+			MouseDefaultCursorShape = (_hoveredButtonIndex != -1) ? CursorShape.PointingHand : CursorShape.Arrow;
+		}
+
+		// -------------------------------------------------------------
+		// 双通道鼠标输入监听 (确保 100% 捕获点击事件)
+		// -------------------------------------------------------------
+		public override void _GuiInput(InputEvent @event)
+		{
+			if (!Visible) return;
+			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+			{
+				HandleMenuClick(_currentMousePos);
+				AcceptEvent();
+			}
+		}
+
+		public override void _UnhandledInput(InputEvent @event)
+		{
+			if (!Visible) return;
+			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+			{
+				HandleMenuClick(_currentMousePos);
+			}
+		}
+
+		private void HandleMenuClick(Vector2 clickPos)
+		{
+			bool hasSave = SaveManager.Instance.HasActiveRunSave();
+
+			for (int i = 0; i < 5; i++)
+			{
+				if (GetMenuButtonRect(i).HasPoint(clickPos))
+				{
+					switch (i)
+					{
+						case 0: // 继续战役
+							if (hasSave) OnContinueRunRequested?.Invoke();
+							break;
+						case 1: // 开始新征程 (进入机库选船)
+							OnNewRunRequested?.Invoke();
+							break;
+						case 2: // 母港科研总局
+							OnHangarRequested?.Invoke();
+							break;
+						case 3: // 虚拟风洞测试靶场
+							OnSandboxRequested?.Invoke();
+							break;
+						case 4: // 退出程序
+							GetTree().Quit();
+							break;
+					}
+					return;
+				}
+			}
+		}
+
+		private Rect2 GetMenuButtonRect(int index)
+		{
+			Vector2 viewSize = GetViewportRect().Size;
+			float btnW = 380.0f;
+			float btnH = 50.0f;
+			float startY = viewSize.Y * 0.38f;
+			float x = (viewSize.X - btnW) * 0.5f;
+			return new Rect2(x, startY + (index * 64.0f), btnW, btnH);
+		}
+
+		public override void _Draw()
+		{
+			if (!Visible) return;
+
+			var font = ThemeDB.FallbackFont;
+			Vector2 viewSize = GetViewportRect().Size;
+			Vector2 center = viewSize * 0.5f;
+
+			// 1. 全屏半透明科幻暗化底板
+			DrawRect(new Rect2(Vector2.Zero, viewSize), new Color(0.02f, 0.04f, 0.08f, 0.94f));
+
+			// 2. 主副标题居中绘制
+			string title = "✦  断  路  协  议  ✦";
+			string subTitle = "BREAKER PROTOCOL : VOID ASCENSION";
+
+			DrawString(font, new Vector2(center.X - 300, viewSize.Y * 0.16f), title, HorizontalAlignment.Center, 600, 38, Colors.Cyan);
+			DrawString(font, new Vector2(center.X - 300, viewSize.Y * 0.22f), subTitle, HorizontalAlignment.Center, 600, 14, Colors.Gold);
+
+			// 3. 绘制 5 大居中菜单按钮
+			bool hasSave = SaveManager.Instance.HasActiveRunSave();
+			string[] btnTexts = {
+				hasSave ? "▶  继续战役 (恢复现场)" : "▷  暂无进行中的战役",
+				"🚀  开始新征程 (机库选船)",
+				"🔬  母港科研总局 (Meta 科技)",
+				"🛠️  虚拟风洞靶场 (自由改装)",
+				"✕  退出战备终端"
+			};
+
+			for (int i = 0; i < 5; i++)
+			{
+				Rect2 rect = GetMenuButtonRect(i);
+				bool isHover = i == _hoveredButtonIndex;
+				bool isEnabled = (i != 0 || hasSave);
+
+				Color bgColor = isHover && isEnabled ? new Color(0.12f, 0.38f, 0.60f, 0.95f) : new Color(0.05f, 0.10f, 0.18f, 0.85f);
+				Color borderColor = isEnabled ? (isHover ? Colors.White : Colors.Cyan) : Colors.DimGray;
+
+				DrawRect(rect, bgColor);
+				DrawRect(rect, borderColor, false, isHover && isEnabled ? 2.0f : 1.2f);
+
+				Color textColor = isEnabled ? (isHover ? Colors.Gold : Colors.White) : Colors.Gray;
+				DrawString(font, rect.Position + new Vector2(30, 32), btnTexts[i], HorizontalAlignment.Left, -1, 14, textColor);
+			}
+
+			// 4. 底部状态与版本信息
+			DrawString(font, new Vector2(30, viewSize.Y - 25), "Breaker Protocol Core Engine v0.8.3 | Task-43 Fleet Hangar Active", HorizontalAlignment.Left, -1, 12, Colors.DarkGray);
+		}
+	}
+}
+</file>
+
+<file path="Scripts/UI/Menu/MainMenuUI.cs.uid">
+uid://bpcds6klm7twe
+</file>
+
 <file path="Scripts/UI/Meta/MetaTechTreeUI.cs">
 using System.Collections.Generic;
 using Godot;
@@ -20236,198 +22886,6 @@ namespace BreakerProtocol.UI.Meta
 
 <file path="Scripts/UI/Meta/MetaTechTreeUI.cs.uid">
 uid://clekvgw0nnavq
-</file>
-
-<file path="Scripts/UI/Pacts/CalamityPactsUI.cs">
-using System;
-using System.Collections.Generic;
-using Godot;
-using BreakerProtocol.Core;
-using BreakerProtocol.World.Pacts;
-
-namespace BreakerProtocol.UI.Pacts
-{
-	/// <summary>
-	/// 灾厄契约高阶热度选择界面
-	/// </summary>
-	public partial class CalamityPactsUI : Control
-	{
-		private Rect2 _panelArea;
-		private float _animTime = 0.0f;
-		private Vector2 _currentMousePos = Vector2.Zero;
-		private PactId? _hoveredPact = null;
-
-		public event Action? OnStartWithPacts;
-
-		public override void _Ready()
-		{
-			SetAnchorsPreset(LayoutPreset.FullRect);
-			GrowHorizontal = GrowDirection.Both;
-			GrowVertical = GrowDirection.Both;
-			MouseFilter = MouseFilterEnum.Stop;
-
-			Vector2 vpSize = GetViewportRect().Size;
-			CustomMinimumSize = vpSize;
-			Size = vpSize;
-		}
-
-		public override void _Process(double delta)
-		{
-			_animTime += (float)delta * 3.0f;
-
-			Vector2 vpSize = GetViewportRect().Size;
-			if (vpSize.X > 100 && vpSize.Y > 100 && Size != vpSize)
-			{
-				Size = vpSize;
-				CustomMinimumSize = vpSize;
-			}
-
-			_currentMousePos = GetLocalMousePosition();
-			UpdateHoverState(_currentMousePos);
-
-			QueueRedraw();
-		}
-
-		private void UpdateHoverState(Vector2 mousePos)
-		{
-			_hoveredPact = null;
-			int index = 0;
-			foreach (var pact in CalamityPactManager.Instance.Pacts.Values)
-			{
-				if (GetPactCardRect(index).HasPoint(mousePos))
-				{
-					_hoveredPact = pact.Id;
-					break;
-				}
-				index++;
-			}
-
-			bool isHoverBtn = GetStartButtonRect().HasPoint(mousePos);
-			MouseDefaultCursorShape = (_hoveredPact != null || isHoverBtn) ? CursorShape.PointingHand : CursorShape.Arrow;
-		}
-
-		public override void _GuiInput(InputEvent @event)
-		{
-			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
-			{
-				HandleClick(_currentMousePos);
-				AcceptEvent();
-			}
-		}
-
-		public override void _UnhandledInput(InputEvent @event)
-		{
-			if (!Visible) return;
-			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
-			{
-				HandleClick(_currentMousePos);
-			}
-		}
-
-		private void HandleClick(Vector2 clickPos)
-		{
-			int index = 0;
-			foreach (var pact in CalamityPactManager.Instance.Pacts.Values)
-			{
-				if (GetPactCardRect(index).HasPoint(clickPos))
-				{
-					CalamityPactManager.Instance.TogglePact(pact.Id);
-					return;
-				}
-				index++;
-			}
-
-			if (GetStartButtonRect().HasPoint(clickPos))
-			{
-				Visible = false;
-				OnStartWithPacts?.Invoke();
-			}
-		}
-
-		private Rect2 GetPanelArea()
-		{
-			Vector2 vpSize = GetViewportRect().Size;
-			float w = vpSize.X > 100 ? vpSize.X : 1280.0f;
-			float h = vpSize.Y > 100 ? vpSize.Y : 720.0f;
-			return new Rect2(120, 65, w - 240, h - 130);
-		}
-
-		private Rect2 GetPactCardRect(int index)
-		{
-			var panel = GetPanelArea();
-			int col = index % 2;
-			int row = index / 2;
-			float cardW = (panel.Size.X - 90) * 0.5f;
-			float cardH = 105.0f;
-
-			float x = panel.Position.X + 30 + (col * (cardW + 30));
-			float y = panel.Position.Y + 80 + (row * (cardH + 20));
-			return new Rect2(x, y, cardW, cardH);
-		}
-
-		private Rect2 GetStartButtonRect()
-		{
-			var panel = GetPanelArea();
-			return new Rect2(panel.Position.X + (panel.Size.X * 0.5f) - 130, panel.End.Y - 60, 260, 42);
-		}
-
-		public override void _Draw()
-		{
-			_panelArea = GetPanelArea();
-			var font = ThemeDB.FallbackFont;
-
-			int totalHeat = CalamityPactManager.Instance.GetTotalHeatLevel();
-			float mult = CalamityPactManager.Instance.GetScoreRewardMultiplier();
-
-			// 1. 绘制科幻深渊契约背板
-			DrawRect(_panelArea, new Color(0.04f, 0.02f, 0.05f, 0.96f));
-			DrawRect(_panelArea, totalHeat > 0 ? Colors.OrangeRed : Colors.Cyan, false, 2.5f);
-
-			// 2. 标头与当前热度总览
-			DrawString(font, _panelArea.Position + new Vector2(30, 36), "【 极限挑战 · 灾厄契约热度系统 】 CALAMITY HEAT PACTS", HorizontalAlignment.Left, -1, 16, Colors.Gold);
-			string heatTag = $"• 当前热度等级: 🔥 {totalHeat} 级  (结算收益: +{(mult - 1.0f) * 100:F0}%)";
-			DrawString(font, _panelArea.Position + new Vector2(_panelArea.Size.X - 360, 36), heatTag, HorizontalAlignment.Right, -1, 13, Colors.OrangeRed);
-			DrawLine(_panelArea.Position + new Vector2(25, 50), _panelArea.Position + new Vector2(_panelArea.Size.X - 25, 50), new Color(0.4f, 0.5f, 0.6f, 0.4f), 1.5f);
-
-			// 3. 绘制 6 大灾厄契约卡片
-			int index = 0;
-			foreach (var pact in CalamityPactManager.Instance.Pacts.Values)
-			{
-				Rect2 card = GetPactCardRect(index);
-				bool isHover = pact.Id == _hoveredPact;
-
-				Color cardBg = pact.IsActive ? new Color(0.20f, 0.05f, 0.05f, 0.95f) : new Color(0.06f, 0.08f, 0.12f, 0.85f);
-				Color cardBorder = pact.IsActive ? Colors.OrangeRed : (isHover ? Colors.White : new Color(0.3f, 0.4f, 0.5f, 0.6f));
-
-				DrawRect(card, cardBg);
-				DrawRect(card, cardBorder, false, pact.IsActive ? 2.2f : 1.2f);
-
-				// 勾选状态框
-				Rect2 checkRect = new(card.Position.X + 15, card.Position.Y + 16, 20, 20);
-				DrawRect(checkRect, pact.IsActive ? Colors.OrangeRed : new Color(0.1f, 0.1f, 0.1f));
-				DrawRect(checkRect, Colors.White, false, 1.0f);
-				if (pact.IsActive)
-				{
-					DrawString(font, checkRect.Position + new Vector2(3, 16), "✔", HorizontalAlignment.Center, -1, 14, Colors.White);
-				}
-
-				// 标题与热度等级
-				DrawString(font, card.Position + new Vector2(45, 30), $"{pact.Name} (🔥 +{pact.HeatLevel} 级)", HorizontalAlignment.Left, -1, 13, pact.IsActive ? Colors.Gold : Colors.White);
-				DrawString(font, card.Position + new Vector2(15, 60), pact.Description, HorizontalAlignment.Left, (int)card.Size.X - 30, 11, Colors.LightGray);
-				DrawString(font, card.Position + new Vector2(15, 92), $"• 惩罚: {pact.PenaltyTag}", HorizontalAlignment.Left, -1, 11, Colors.OrangeRed);
-
-				index++;
-			}
-
-			// 4. 底部确认按钮
-			Rect2 startBtn = GetStartButtonRect();
-			bool isHoverBtn = startBtn.HasPoint(_currentMousePos);
-			DrawRect(startBtn, isHoverBtn ? new Color(0.75f, 0.35f, 0.15f) : new Color(0.55f, 0.25f, 0.10f));
-			DrawRect(startBtn, isHoverBtn ? Colors.White : Colors.Gold, false, isHoverBtn ? 2.0f : 1.2f);
-			DrawString(font, startBtn.Position + new Vector2(30, 26), "🔥 签署契约 · 开启极限战役", HorizontalAlignment.Center, -1, 13, Colors.White);
-		}
-	}
-}
 </file>
 
 <file path="Scripts/UI/Pacts/CalamityPactsUI.cs.uid">
@@ -21195,6 +23653,92 @@ namespace BreakerProtocol.Utils
 uid://dl0xgh8prbpag
 </file>
 
+<file path="Scripts/World/Director/EncounterDirector.cs">
+using System.Collections.Generic;
+using System.Linq;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
+using BreakerProtocol.Ship;
+using BreakerProtocol.Ship.AI;
+
+namespace BreakerProtocol.World.Director
+{
+	/// <summary>
+	/// 战役遭遇生成导演 (完全由 encounter_pools.json 驱动)
+	/// </summary>
+	public static class EncounterDirector
+	{
+		/// <summary>
+		/// 根据星区类别与难度随机挑选遭遇配置
+		/// </summary>
+		public static EncounterDef? PickEncounter(string category = "Combat", int maxDifficulty = 3)
+		{
+			var candidates = DataManager.Instance.Encounters.GetAll()
+				.Where(e => e.Category == category && e.DifficultyRating <= maxDifficulty)
+				.ToList();
+
+			if (candidates.Count == 0)
+			{
+				return DataManager.Instance.Encounters.GetAll().FirstOrDefault();
+			}
+
+			return candidates[(int)GD.RandRange(0, candidates.Count - 1)];
+		}
+
+		/// <summary>
+		/// 在指定战场生成敌方战队 (支持指定目标并挂载 AI 控制器)
+		/// </summary>
+		public static List<ShipEntity> SpawnEncounter(Node worldContext, EncounterDef encounter, Vector2 centerPos, Node2D? target = null)
+		{
+			var spawnedShips = new List<ShipEntity>();
+
+			foreach (var shipDef in encounter.Ships)
+			{
+				if (!DataManager.Instance.Blueprints.TryGet(shipDef.BlueprintId, out var blueprint) || blueprint == null)
+				{
+					GD.PrintErr($"[EncounterDirector] 未找到蓝图: {shipDef.BlueprintId}");
+					continue;
+				}
+
+				Vector2 spawnPos = centerPos + new Vector2(shipDef.SpawnOffset.X, shipDef.SpawnOffset.Y);
+
+				var enemyShip = new ShipEntity
+				{
+					Name = $"Enemy_{shipDef.Role}_{spawnedShips.Count + 1}",
+					Position = spawnPos,
+					Rotation = Mathf.Pi // 敌舰默认朝向下方
+				};
+				enemyShip.AddToGroup("Enemies");
+				enemyShip.AddToGroup("Ship");
+
+				worldContext.AddChild(enemyShip);
+				ShipBlueprintLoader.ApplyBlueprint(enemyShip, blueprint);
+
+				// 挂载 AI 控制原型 (对齐 AiArchetype 标准定义)
+				AiArchetype archetype = shipDef.Role switch
+				{
+					"Scout"  => AiArchetype.Swarm,
+					"Elite"  => AiArchetype.KiteSniper, // 修复此处枚举名称
+					"Boss"   => AiArchetype.Brawler,
+					_        => AiArchetype.Brawler
+				};
+
+				enemyShip.AttachAI(archetype, target);
+				spawnedShips.Add(enemyShip);
+			}
+
+			GD.Print($"[EncounterDirector] 已生成遭遇战: 【{encounter.DisplayName}】，共 {spawnedShips.Count} 艘战舰。");
+			return spawnedShips;
+		}
+	}
+}
+</file>
+
+<file path="Scripts/World/Director/EncounterDirector.cs.uid">
+uid://1s4fu6jibc4y
+</file>
+
 <file path="Scripts/World/Director/GameDirector.cs">
 using System;
 using Godot;
@@ -21328,6 +23872,128 @@ namespace BreakerProtocol.World.Director
 
 <file path="Scripts/World/Director/GameDirector.cs.uid">
 uid://te4whm0rrn0b
+</file>
+
+<file path="Scripts/World/Economy/LootDropService.cs">
+using System.Collections.Generic;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
+
+namespace BreakerProtocol.World.Economy
+{
+	/// <summary>
+	/// 结算掉落结果 DTO
+	/// </summary>
+	public class LootResult
+	{
+		public int Scraps { get; set; } = 0;
+		public int ComputeCores { get; set; } = 0;
+		public List<string> DroppedModuleIds { get; } = new();
+	}
+
+	/// <summary>
+	/// 全局战利品加权轮盘掉落服务 (完全由 drop_tables.json 驱动)
+	/// </summary>
+	public static class LootDropService
+	{
+		/// <summary>
+		/// 执行加权掉落结算
+		/// </summary>
+		/// <param name="tableId">掉落表 ID</param>
+		/// <param name="luckMultiplier">幸运倍率 (受契约与科技加成)</param>
+		public static LootResult RollLoot(string tableId, float luckMultiplier = 1.0f)
+		{
+			var result = new LootResult();
+
+			if (!DataManager.Instance.DropTables.TryGet(tableId, out var table) || table == null)
+			{
+				GD.PrintErr($"[LootDropService] 未找到掉落表: {tableId}");
+				return result;
+			}
+
+			// 1. 金属废料区间抽取
+			int baseScraps = (int)GD.RandRange(table.MinScraps, table.MaxScraps);
+			result.Scraps = Mathf.Max(0, (int)(baseScraps * luckMultiplier));
+
+			// 2. 算力核心几率判定
+			if (table.CoreDropChance > 0.0f)
+			{
+				float finalChance = Mathf.Clamp(table.CoreDropChance * luckMultiplier, 0.0f, 1.0f);
+				if (GD.Randf() <= finalChance)
+				{
+					result.ComputeCores = 1;
+				}
+			}
+
+			// 3. 构件物品加权轮盘抽取 (Roulette Wheel Selection)
+			if (table.Entries != null && table.Entries.Count > 0)
+			{
+				int totalWeight = 0;
+				foreach (var entry in table.Entries) totalWeight += entry.Weight;
+
+				if (totalWeight > 0)
+				{
+					int roll = (int)GD.RandRange(0, totalWeight);
+					int currentSum = 0;
+
+					foreach (var entry in table.Entries)
+					{
+						currentSum += entry.Weight;
+						if (roll <= currentSum)
+						{
+							if (entry.DropType == DropItemType.Module && !string.IsNullOrEmpty(entry.ModuleId))
+							{
+								result.DroppedModuleIds.Add(entry.ModuleId);
+							}
+							break;
+						}
+					}
+				}
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// 在战场坐标生成物理掉落物实体 (对齐 TASK-37 SalvageDropEntity 规范)
+		/// </summary>
+		public static void SpawnLootAt(Node worldContext, Vector2 position, string tableId, float luckMultiplier = 1.0f)
+		{
+			var loot = RollLoot(tableId, luckMultiplier);
+
+			// 产出金属废料实体
+			if (loot.Scraps > 0)
+			{
+				var scrapDrop = new SalvageDropEntity
+				{
+					Position = position + new Vector2((float)GD.RandRange(-25, 25), (float)GD.RandRange(-25, 25)),
+					Velocity = new Vector2((float)GD.RandRange(-20, 20), (float)GD.RandRange(-20, 20)),
+					Type = SalvageType.Scraps,
+					Amount = loot.Scraps
+				};
+				worldContext.AddChild(scrapDrop);
+			}
+
+			// 产出算力核心实体
+			if (loot.ComputeCores > 0)
+			{
+				var coreDrop = new SalvageDropEntity
+				{
+					Position = position + new Vector2((float)GD.RandRange(-25, 25), (float)GD.RandRange(-25, 25)),
+					Velocity = new Vector2((float)GD.RandRange(-15, 15), (float)GD.RandRange(-15, 15)),
+					Type = SalvageType.ComputeCore,
+					Amount = loot.ComputeCores
+				};
+				worldContext.AddChild(coreDrop);
+			}
+		}
+	}
+}
+</file>
+
+<file path="Scripts/World/Economy/LootDropService.cs.uid">
+uid://bwf47mrhmg0k3
 </file>
 
 <file path="Scripts/World/Economy/PlayerEconomyManager.cs">
@@ -21489,842 +24155,117 @@ namespace BreakerProtocol.World.Economy
 uid://siry225h52u4
 </file>
 
-<file path="Scripts/World/Events/SpaceEventDatabase.cs">
-using System.Collections.Generic;
-using Godot;
-
-namespace BreakerProtocol.World.Events
-{
-	/// <summary>
-	/// 包含 5 大经典太空 Roguelike 叙事异象的事件数据库
-	/// </summary>
-	public static class SpaceEventDatabase
-	{
-		public static Dictionary<string, SpaceEventNode> Events { get; } = new();
-
-		static SpaceEventDatabase()
-		{
-			BuildDatabase();
-		}
-
-		private static void BuildDatabase()
-		{
-			// =========================================================
-			// 事件 1: 废弃的先驱者科研船
-			// =========================================================
-			var ev1 = new SpaceEventNode
-			{
-				Id = "ev_pioneer_derelict",
-				Title = "【异象】废弃的先驱者科研船",
-				FactionTag = "古代科技遗迹",
-				ThemeColor = new Color(0.35f, 0.85f, 0.95f),
-				Description = "雷达在一片碎石带中捕获到微弱的求救信标。一艘隶属于旧时代的先驱者级科研船在真空中静默漂流，舰桥外壳已被等离子烧蚀，但其主动力舱仍有微弱的能量读数。"
-			};
-			ev1.Choices.Add(new EventChoice
-			{
-				ChoiceText = "强行黑入主服务器：尝试逆向破译算力核心与蓝图数据",
-				RequiredConditionTag = "[高风险 65% 成功率]",
-				SuccessRate = 0.65f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					CoreDelta = 1,
-					ScrapDelta = 120,
-					ResultLog = "破译成功！主机未损毁的数据阵列中提取出 1 颗【算力核心】和 120 废料！"
-				},
-				FailureOutcome = new EventOutcome
-				{
-					Type = OutcomeType.DamageModule,
-					DamageAmount = 60.0f,
-					ResultLog = "触发了反入侵防御电涌！全舰电子系统过载，外部构件受到 60 点电涌损伤！"
-				}
-			});
-			ev1.Choices.Add(new EventChoice
-			{
-				ChoiceText = "派工程无人机切割外装甲板：稳妥搜刮金属废料",
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ScrapDelta = 80,
-					ResultLog = "无人机安全回收了 80 单位的高纯度装甲废料。"
-				}
-			});
-			ev1.Choices.Add(new EventChoice
-			{
-				ChoiceText = "忽视漂流舰，保持航向离开",
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ResultLog = "你选择不冒任何未知风险，战舰平稳加速驶离了碎片区。"
-				}
-			});
-			Events[ev1.Id] = ev1;
-
-			// =========================================================
-			// 事件 2: 生化废料走私船遇险
-			// =========================================================
-			var ev2 = new SpaceEventNode
-			{
-				Id = "ev_biohazard_smuggler",
-				Title = "【异象】生化走私船的求救信号",
-				FactionTag = "废土走私帮",
-				ThemeColor = new Color(0.45f, 0.90f, 0.35f),
-				Description = "一艘舷号被刮花的走私轻护卫舰发生了严重的生化酸蚀泄漏，绿色的腐蚀酸雾正从其引擎排气口喷涌而出，受困船员向你的战舰发送了紧急过载压制求援。"
-			};
-			ev2.Choices.Add(new EventChoice
-			{
-				ChoiceText = "消耗 60 废料提供紧急中和剂救援船员",
-				RequiredConditionTag = "[需要 60 ⚙]",
-				RequiredScraps = 60,
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ScrapDelta = -60,
-					CoreDelta = 1,
-					ResultLog = "获救的走私船长感激涕零，将藏在走私暗格中的 1 颗【算力核心】赠送给你！"
-				}
-			});
-			ev2.Choices.Add(new EventChoice
-			{
-				ChoiceText = "无视求救，直接用磁力抓钩拖拽其外部货箱",
-				RequiredConditionTag = "[50% 成功率 / 50% 酸蚀腐蚀]",
-				SuccessRate = 0.50f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ScrapDelta = 140,
-					ResultLog = "你成功掠夺了货箱，获得 140 单位走私废料！"
-				},
-				FailureOutcome = new EventOutcome
-				{
-					Type = OutcomeType.DamageModule,
-					DamageAmount = 80.0f,
-					ResultLog = "货箱破裂泄漏！强酸直接腐蚀了你的舰首模块，造成 80 点严重酸蚀损伤！"
-				}
-			});
-			ev2.Choices.Add(new EventChoice
-			{
-				ChoiceText = "广播通报巡逻队坐标并撤离",
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ResultLog = "你发送了遇险坐标信标，避免了卷入走私帮的麻烦。"
-				}
-			});
-			Events[ev2.Id] = ev2;
-
-			// =========================================================
-			// 事件 3: 流亡机械神教传道者
-			// =========================================================
-			var ev3 = new SpaceEventNode
-			{
-				Id = "ev_mech_cultist",
-				Title = "【异象】流亡机械神教传道者",
-				FactionTag = "机械神教流亡者",
-				ThemeColor = new Color(0.95f, 0.65f, 0.25f),
-				Description = "一艘装饰着金色齿轮和粗大铜导线的重型修道船靠近了你。一位自称「第七逻辑使徒」的赛博主教请求对你的飞船配线与动力炉进行『神圣过载超频』。"
-			};
-			ev3.Choices.Add(new EventChoice
-			{
-				ChoiceText = "接受机械主教的『神圣布线祝福』(彻底修补全舰)",
-				SuccessRate = 0.80f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.RepairShip,
-					RepairRatio = 0.50f,
-					ResultLog = "神圣仪式重整了战舰的配线，全舰构件耐久度瞬间恢复 +50%！"
-				},
-				FailureOutcome = new EventOutcome
-				{
-					Type = OutcomeType.DamageModule,
-					DamageAmount = 45.0f,
-					ResultLog = "过载短路！神圣仪式引发了配线火花，部分逻辑构件损耗了 45 点耐久。"
-				}
-			});
-			ev3.Choices.Add(new EventChoice
-			{
-				ChoiceText = "向机械教会捐献 100 废料以换取高阶运算组件",
-				RequiredConditionTag = "[需要 100 ⚙]",
-				RequiredScraps = 100,
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ScrapDelta = -100,
-					CoreDelta = 1,
-					ResultLog = "教会收下废料，授予你 1 颗经过机械圣水浸润的【军用算力核心】！"
-				}
-			});
-			ev3.Choices.Add(new EventChoice
-			{
-				ChoiceText = "拒绝接触，礼貌关闭通讯通道",
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ResultLog = "你婉拒了使徒的传道，修道船缓缓滑入暗区。"
-				}
-			});
-			Events[ev3.Id] = ev3;
-
-			// =========================================================
-			// 事件 4: 虚空海盗隐匿雷区
-			// =========================================================
-			var ev4 = new SpaceEventNode
-			{
-				Id = "ev_pirate_minefield",
-				Title = "【异象】海盗潜伏雷区与战利品浮标",
-				FactionTag = "虚空海盗",
-				ThemeColor = new Color(0.95f, 0.25f, 0.35f),
-				Description = "前方的跃迁信道被海盗布设了大量的隐匿等离子水雷，中央漂浮着一颗被遗弃的武器补给浮标，周围电磁信号极为紊乱。"
-			};
-			ev4.Choices.Add(new EventChoice
-			{
-				ChoiceText = "利用断路破译技术：远程引爆雷区并打捞补给",
-				RequiredConditionTag = "[70% 成功率]",
-				SuccessRate = 0.70f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ScrapDelta = 150,
-					ResultLog = "精准引爆！连锁爆炸清空了雷区，打捞获得 150 单位军用废料！"
-				},
-				FailureOutcome = new EventOutcome
-				{
-					Type = OutcomeType.DamageModule,
-					DamageAmount = 70.0f,
-					ResultLog = "破译延迟导致近距水雷引爆！爆炸破片重创了装甲外壳 (-70 HP)！"
-				}
-			});
-			ev4.Choices.Add(new EventChoice
-			{
-				ChoiceText = "开启主引擎全向阻尼，极慢速绕道通过",
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ResultLog = "飞船安全穿过了雷区，未造成任何损失与消耗。"
-				}
-			});
-			Events[ev4.Id] = ev4;
-
-			// =========================================================
-			// 事件 5: 脉冲恒星耀斑爆发
-			// =========================================================
-			var ev5 = new SpaceEventNode
-			{
-				Id = "ev_solar_flare",
-				Title = "【异象】超临界脉冲耀斑爆发",
-				FactionTag = "恒星天文灾害",
-				ThemeColor = new Color(1.0f, 0.80f, 0.20f),
-				Description = "伴星爆发了极其剧烈的超临界电磁耀斑，强烈的带电粒子风暴即将横扫你所在的战术扇区，飞船护盾与电容系统发出刺耳的告警声！"
-			};
-			ev5.Choices.Add(new EventChoice
-			{
-				ChoiceText = "张开电容储能矩阵：直面粒子风暴强行吸收电能",
-				RequiredConditionTag = "[高收益 / 50% 核心过载风险]",
-				SuccessRate = 0.50f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ScrapDelta = 180,
-					ResultLog = "电容矩阵完美蓄能！吸收的高纯度等离子废料提炼出 +180 废料！"
-				},
-				FailureOutcome = new EventOutcome
-				{
-					Type = OutcomeType.DamageModule,
-					DamageAmount = 85.0f,
-					ResultLog = "电容过载炸裂！高压电流在舱内乱窜，造成 85 点严重热力损伤！"
-				}
-			});
-			ev5.Choices.Add(new EventChoice
-			{
-				ChoiceText = "躲入小行星阴影区规避风暴",
-				SuccessRate = 1.0f,
-				SuccessOutcome = new EventOutcome
-				{
-					Type = OutcomeType.GainCurrency,
-					ResultLog = "小行星岩体为你挡住了致命的粒子风暴，飞船安然无恙。"
-				}
-			});
-			Events[ev5.Id] = ev5;
-		}
-
-		public static SpaceEventNode GetRandomEvent()
-		{
-			var list = new List<SpaceEventNode>(Events.Values);
-			return list[(int)GD.RandRange(0, list.Count - 1)];
-		}
-	}
-}
-</file>
-
 <file path="Scripts/World/Events/SpaceEventDatabase.cs.uid">
 uid://ch0g5lv1qvavk
-</file>
-
-<file path="Scripts/World/Events/SpaceEventModels.cs">
-using System;
-using System.Collections.Generic;
-using Godot;
-
-namespace BreakerProtocol.World.Events
-{
-	public enum OutcomeType
-	{
-		GainCurrency,     // 获得金属废料 / 算力核心
-		SpendCurrency,    // 消耗金属废料 / 算力核心
-		RepairShip,       // 维修舰体构件
-		DamageModule,     // 随机构件受到损伤
-		GainRandomModule, // 获得随机高级构件
-		TriggerAmbush,    // 触发突发伏击
-		NextEventNode     // 流转至后续阶段事件
-	}
-
-	/// <summary>
-	/// 单个事件抉择项的结算后果
-	/// </summary>
-	public class EventOutcome
-	{
-		public OutcomeType Type { get; set; }
-		public bool IsSuccess { get; set; } = true;
-		public float RollPercent { get; set; } = 0.0f;
-		public float TargetThreshold { get; set; } = 1.0f;
-		public int ScrapDelta { get; set; } = 0;
-		public int CoreDelta { get; set; } = 0;
-		public float RepairRatio { get; set; } = 0.0f;
-		public float DamageAmount { get; set; } = 0.0f;
-		public string? NextNodeId { get; set; }
-		public string ResultLog { get; set; } = string.Empty;
-	}
-
-	/// <summary>
-	/// 单个事件分支选项
-	/// </summary>
-	public class EventChoice
-	{
-		public string ChoiceText { get; set; } = string.Empty;
-		public string RequiredConditionTag { get; set; } = string.Empty;
-		public int RequiredScraps { get; set; } = 0;
-		public int RequiredCores { get; set; } = 0;
-		public float SuccessRate { get; set; } = 1.0f; // 成功几率 0.0 ~ 1.0
-
-		public EventOutcome SuccessOutcome { get; set; } = new();
-		public EventOutcome? FailureOutcome { get; set; }
-	}
-
-	/// <summary>
-	/// 单个完整深空随机事件节点
-	/// </summary>
-	public class SpaceEventNode
-	{
-		public string Id { get; set; } = string.Empty;
-		public string Title { get; set; } = string.Empty;
-		public string FactionTag { get; set; } = "深空异象";
-		public string Description { get; set; } = string.Empty;
-		public Color ThemeColor { get; set; } = new Color(0.35f, 0.85f, 0.95f);
-		public List<EventChoice> Choices { get; } = new();
-	}
-}
-</file>
-
-<file path="Scripts/World/Events/SpaceEventModels.cs.uid">
-uid://di8vjb3eb476f
-</file>
-
-<file path="Scripts/World/Market/BlackMarketService.cs">
-using System.Collections.Generic;
-using System.Linq;
-using Godot;
-using BreakerProtocol.Core;
-using BreakerProtocol.Data.Models;
-
-namespace BreakerProtocol.World.Market
-{
-	/// <summary>
-	/// 单个在售黑市商品条目
-	/// </summary>
-	public class MarketItem
-	{
-		public string ItemId { get; set; } = string.Empty;
-		public ModuleDataDefinition Definition { get; set; } = null!;
-		public int BuyPrice { get; set; }
-		public bool IsSoldOut { get; set; } = false;
-	}
-
-	/// <summary>
-	/// 黑市货架生成器与定价服务
-	/// </summary>
-	public static class BlackMarketService
-	{
-		/// <summary>
-		/// 随机生成 4~6 个在售构件
-		/// </summary>
-		public static List<MarketItem> GenerateMarketStock(int count = 5)
-		{
-			var result = new List<MarketItem>();
-			var allModules = DataManager.Instance.Modules.GetAll().ToList();
-
-			if (allModules.Count == 0) return result;
-
-			// 洗牌算法随机挑选
-			var shuffled = allModules.OrderBy(_ => GD.Randf()).Take(count);
-
-			foreach (var mod in shuffled)
-			{
-				int price = CalculateBuyPrice(mod);
-				result.Add(new MarketItem
-				{
-					ItemId = mod.Id,
-					Definition = mod,
-					BuyPrice = price,
-					IsSoldOut = false
-				});
-			}
-
-			return result;
-		}
-
-		/// <summary>
-		/// 根据构件类型、质量与基础血量计算买入基准价格
-		/// </summary>
-		public static int CalculateBuyPrice(ModuleDataDefinition def)
-		{
-			int basePrice = def.Category switch
-			{
-				"Weapon"      => 140,
-				"Thruster"    => 90,
-				"PowerSource" => 180,
-				"Modifier"    => 120,
-				"Logic"       => 80,
-				"Armor"       => 60,
-				_             => 50
-			};
-
-			// 根据体量与耐久加权
-			float hpFactor = Mathf.Clamp(def.BaseHp / 200.0f, 0.8f, 2.5f);
-			return (int)(basePrice * hpFactor);
-		}
-
-		/// <summary>
-		/// 计算回收/拆解折旧价格 (原价 60%)
-		/// </summary>
-		public static int CalculateSellPrice(ModuleDataDefinition def, float currentHpRatio = 1.0f)
-		{
-			int fullBuyPrice = CalculateBuyPrice(def);
-			float scrapRate = 0.60f; // 60% 折旧率
-			return Mathf.Max(15, (int)(fullBuyPrice * scrapRate * Mathf.Clamp(currentHpRatio, 0.3f, 1.0f)));
-		}
-	}
-}
 </file>
 
 <file path="Scripts/World/Market/BlackMarketService.cs.uid">
 uid://h1iff5unqv3i
 </file>
 
-<file path="Scripts/World/Meta/MetaProgressionManager.cs">
-using System;
-using System.Collections.Generic;
-using Godot;
-using BreakerProtocol.Ship;
-using BreakerProtocol.World.Economy;
-
-namespace BreakerProtocol.World.Meta
-{
-	public enum TechCategory
-	{
-		Metallurgy,  // 重工冶金 (防护、装甲、爆甲)
-		Electronics, // 超频电容 (配线、经济、黑客)
-		Propulsion   // 矢量推进 (机动、刹车、航道)
-	}
-
-	/// <summary>
-	/// 单个 Meta 科技节点数据模型
-	/// </summary>
-	public class MetaTechNode
-	{
-		public string Id { get; set; } = string.Empty;
-		public string Name { get; set; } = string.Empty;
-		public TechCategory Category { get; set; }
-		public int Tier { get; set; } = 1; // 1, 2, 3
-		public int Cost { get; set; } = 50; // 消耗数据碎片
-		public string Description { get; set; } = string.Empty;
-		public string? PrerequisiteId { get; set; } // 前置科技 ID
-		public bool IsUnlocked { get; set; } = false;
-		public Vector2 DisplayPosition { get; set; } // UI 绘制坐标
-	}
-
-	/// <summary>
-	/// 局外永久 Meta 科技树总控中枢 (单例)
-	/// </summary>
-	public class MetaProgressionManager
-	{
-		private static MetaProgressionManager? _instance;
-		public static MetaProgressionManager Instance => _instance ??= new MetaProgressionManager();
-
-		// 局外研发数据碎片 (Data Fragments)
-		public int DataFragments { get; private set; } = 280;
-
-		public Dictionary<string, MetaTechNode> AllTechs { get; } = new();
-		public event Action<int>? OnDataFragmentsChanged;
-		public event Action<MetaTechNode>? OnTechUnlocked;
-
-		public MetaProgressionManager()
-		{
-			InitializeDatabase();
-		}
-
-		private void InitializeDatabase()
-		{
-			AllTechs.Clear();
-
-			// ---------------------------------------------------------
-			// 1. 重工冶金分支 (Metallurgy)
-			// ---------------------------------------------------------
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_meta_armor_1",
-				Name = "复合重装甲渗碳",
-				Category = TechCategory.Metallurgy,
-				Tier = 1,
-				Cost = 60,
-				Description = "全舰所有装甲与结构构件的基础耐久度永久提升 +15%。",
-				DisplayPosition = new Vector2(220, 200)
-			});
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_meta_ramming_2",
-				Name = "高频冲压撞角",
-				Category = TechCategory.Metallurgy,
-				Tier = 2,
-				Cost = 120,
-				PrerequisiteId = "tech_meta_armor_1",
-				Description = "舰体高速撞击敌舰时动能伤害提升 +35%，自身受到的撞击反作用力降低 25%。",
-				DisplayPosition = new Vector2(220, 320)
-			});
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_meta_ablative_3",
-				Name = "预应力战术爆甲",
-				Category = TechCategory.Metallurgy,
-				Tier = 3,
-				Cost = 200,
-				PrerequisiteId = "tech_meta_ramming_2",
-				Description = "绝境过载爆甲脱困机构无需改装，开局初始自带完整装药。",
-				DisplayPosition = new Vector2(220, 440)
-			});
-
-			// ---------------------------------------------------------
-			// 2. 超频电容分支 (Electronics)
-			// ---------------------------------------------------------
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_elec_bus_1",
-				Name = "超导低温配线母线",
-				Category = TechCategory.Electronics,
-				Tier = 1,
-				Cost = 60,
-				Description = "脉冲电路的信号衰减与发热耗损降低 20%，供电效率显著提高。",
-				DisplayPosition = new Vector2(580, 200)
-			});
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_elec_economy_2",
-				Name = "废土走私暗格",
-				Category = TechCategory.Electronics,
-				Tier = 2,
-				Cost = 120,
-				PrerequisiteId = "tech_elec_bus_1",
-				Description = "每次开启新星区航行时，开局初始废料额外获赠 +150 ⚙。",
-				DisplayPosition = new Vector2(580, 320)
-			});
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_elec_hacker_3",
-				Name = "深空断路解算矩阵",
-				Category = TechCategory.Electronics,
-				Tier = 3,
-				Cost = 200,
-				PrerequisiteId = "tech_elec_economy_2",
-				Description = "遭遇深空异象与未知事件时，所有高风险分支的检定成功率常驻 +15%。",
-				DisplayPosition = new Vector2(580, 440)
-			});
-
-			// ---------------------------------------------------------
-			// 3. 矢量推进分支 (Propulsion)
-			// ---------------------------------------------------------
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_prop_rcs_1",
-				Name = "矢量姿态高压喷口",
-				Category = TechCategory.Propulsion,
-				Tier = 1,
-				Cost = 60,
-				Description = "RCS 姿态调整回转扭矩提升 +25%，舰首瞄准指向更加迅捷精准。",
-				DisplayPosition = new Vector2(940, 200)
-			});
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_prop_brake_2",
-				Name = "电磁反喷阻尼过载",
-				Category = TechCategory.Propulsion,
-				Tier = 2,
-				Cost = 120,
-				PrerequisiteId = "tech_prop_rcs_1",
-				Description = "巡航阻尼开启状态下的急停刹车反推力提升 +30%，摆脱惯性漂移更快。",
-				DisplayPosition = new Vector2(940, 320)
-			});
-			AddTech(new MetaTechNode
-			{
-				Id = "tech_prop_jump_3",
-				Name = "跃迁引擎超频预热",
-				Category = TechCategory.Propulsion,
-				Tier = 3,
-				Cost = 200,
-				PrerequisiteId = "tech_prop_brake_2",
-				Description = "星区生成时，敌方追击舰队前线起始落后距离额外增加 +1.0 星区列！",
-				DisplayPosition = new Vector2(940, 440)
-			});
-		}
-
-		private void AddTech(MetaTechNode tech)
-		{
-			AllTechs[tech.Id] = tech;
-		}
-
-		public void AddDataFragments(int amount)
-		{
-			if (amount <= 0) return;
-			DataFragments += amount;
-			OnDataFragmentsChanged?.Invoke(DataFragments);
-		}
-
-		public bool UnlockTech(string techId)
-		{
-			if (!AllTechs.TryGetValue(techId, out var tech)) return false;
-			if (tech.IsUnlocked) return false;
-
-			// 前置依赖检查
-			if (!string.IsNullOrEmpty(tech.PrerequisiteId))
-			{
-				if (!AllTechs.TryGetValue(tech.PrerequisiteId, out var pre) || !pre.IsUnlocked)
-				{
-					return false;
-				}
-			}
-
-			// 研发点数扣除
-			if (DataFragments >= tech.Cost)
-			{
-				DataFragments -= tech.Cost;
-				tech.IsUnlocked = true;
-				OnDataFragmentsChanged?.Invoke(DataFragments);
-				OnTechUnlocked?.Invoke(tech);
-				return true;
-			}
-
-			return false;
-		}
-
-		public void ResetAllTechs()
-		{
-			int refund = 0;
-			foreach (var tech in AllTechs.Values)
-			{
-				if (tech.IsUnlocked)
-				{
-					refund += tech.Cost;
-					tech.IsUnlocked = false;
-				}
-			}
-			DataFragments += refund;
-			OnDataFragmentsChanged?.Invoke(DataFragments);
-		}
-
-		/// <summary>
-		/// 在新开局时，将已解锁的 Meta 科技增益全局注入飞船与经济系统
-		/// </summary>
-		public void ApplyMetaBuffsToNewRun(ShipEntity ship)
-		{
-			// 1. 经济增益注入 (走私暗格: 开局初始废料+150)
-			if (IsUnlocked("tech_elec_economy_2"))
-			{
-				PlayerEconomyManager.Instance.AddScraps(150);
-			}
-
-			// 2. 装甲耐久增益注入 (+15% 复合装甲渗碳强化)
-			if (IsUnlocked("tech_meta_armor_1") && ship.Grid != null)
-			{
-				foreach (var m in ship.Grid.Modules)
-				{
-					if (m.Definition.Category == "Armor" || m.Definition.Category == "Hull")
-					{
-						m.CurrentHp = m.MaxHp * 1.15f;
-					}
-				}
-			}
-		}
-
-		public bool IsUnlocked(string techId)
-		{
-			return AllTechs.TryGetValue(techId, out var t) && t.IsUnlocked;
-		}
-	}
-}
-</file>
-
 <file path="Scripts/World/Meta/MetaProgressionManager.cs.uid">
 uid://c5h6g2tkrm6ou
 </file>
 
-<file path="Scripts/World/Pacts/CalamityPactModels.cs">
+<file path="Scripts/World/Pacts/CalamityPactManager.cs">
 using System;
 using System.Collections.Generic;
 using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
 
 namespace BreakerProtocol.World.Pacts
 {
-	public enum PactId
-	{
-		SolarStorm,       // 强电磁风暴 (散热-35%)
-		DepletedUranium,  // 贫铀穿甲装药 (敌方穿透+30%)
-		PursuitTighten,   // 追击严阵以待 (追击速度+50%)
-		WeaknessScan,     // 弱点针对扫描 (AI集火裸线)
-		VolatileSurge,    // 高爆殉爆链 (次生电涌)
-		GravityAnomaly    // 深空引力紊乱 (漂移惯性极大)
-	}
-
-	public class CalamityPact
-	{
-		public PactId Id { get; set; }
-		public string Name { get; set; } = string.Empty;
-		public int HeatLevel { get; set; } = 1;
-		public string Description { get; set; } = string.Empty;
-		public string PenaltyTag { get; set; } = string.Empty;
-		public bool IsActive { get; set; } = false;
-	}
-
 	/// <summary>
-	/// 极限挑战灾厄契约热度总控中枢 (单例)
+	/// 极限挑战灾厄契约热度总控中枢 (单例逻辑管理器，完全由 DataManager 驱动)
 	/// </summary>
 	public class CalamityPactManager
 	{
 		private static CalamityPactManager? _instance;
 		public static CalamityPactManager Instance => _instance ??= new CalamityPactManager();
 
-		public Dictionary<PactId, CalamityPact> Pacts { get; } = new();
+		// 记录当前局内已勾选/激活的契约 ID
+		private readonly HashSet<string> _activePactIds = new();
+
 		public event Action? OnPactsChanged;
 
-		public CalamityPactManager()
+		/// <summary>
+		/// 切换契约勾选状态
+		/// </summary>
+		public void TogglePact(string pactId)
 		{
-			InitializePacts();
-		}
-
-		private void InitializePacts()
-		{
-			Pacts.Clear();
-
-			AddPact(new CalamityPact
+			if (_activePactIds.Contains(pactId))
 			{
-				Id = PactId.SolarStorm,
-				Name = "⚡ 强电磁耀斑风暴",
-				HeatLevel = 1,
-				Description = "恒星风暴产生严重电磁干扰，全舰所有导线与武器的自然散热速率降低 35%。",
-				PenaltyTag = "散热效率: -35%"
-			});
-
-			AddPact(new CalamityPact
-			{
-				Id = PactId.DepletedUranium,
-				Name = "💥 敌方贫铀穿甲军备",
-				HeatLevel = 1,
-				Description = "敌方舰队加装了贫铀穿甲弹头，对玩家外覆装甲的跳弹倾角要求大幅提高，穿透力增加 30%。",
-				PenaltyTag = "敌方穿透: +30%"
-			});
-
-			AddPact(new CalamityPact
-			{
-				Id = PactId.PursuitTighten,
-				Name = "⏱️ 追击舰队严阵以待",
-				HeatLevel = 2,
-				Description = "敌方追击先锋部队引擎过载，星区每次跳跃后追击波前推进速度提升 50%。",
-				PenaltyTag = "追击航速: +50%"
-			});
-
-			AddPact(new CalamityPact
-			{
-				Id = PactId.WeaknessScan,
-				Name = "🧠 启发式弱点定点打击",
-				HeatLevel = 2,
-				Description = "所有敌机 AI 深度解锁启发式扫描，优先集火玩家暴露的供电铜排裸线与受损侧舷。",
-				PenaltyTag = "AI集火弱点"
-			});
-
-			AddPact(new CalamityPact
-			{
-				Id = PactId.VolatileSurge,
-				Name = "💣 高敏反应堆次生电涌",
-				HeatLevel = 2,
-				Description = "动力回路极为敏感，任何构件受创时均有 20% 几率向邻近导线释放 40 点次生电涌伤害。",
-				PenaltyTag = "次生电涌几率: 20%"
-			});
-
-			AddPact(new CalamityPact
-			{
-				Id = PactId.GravityAnomaly,
-				Name = "🌌 深空超重引力紊乱",
-				HeatLevel = 3,
-				Description = "时空曲率不稳定，巡航阻尼制动反推力削弱 40%，机动漂移失控风险大幅攀升。",
-				PenaltyTag = "阻尼制动: -40%"
-			});
-		}
-
-		private void AddPact(CalamityPact pact)
-		{
-			Pacts[pact.Id] = pact;
-		}
-
-		public void TogglePact(PactId id)
-		{
-			if (Pacts.TryGetValue(id, out var pact))
-			{
-				pact.IsActive = !pact.IsActive;
-				OnPactsChanged?.Invoke();
+				_activePactIds.Remove(pactId);
 			}
-		}
-
-		public int GetTotalHeatLevel()
-		{
-			int total = 0;
-			foreach (var p in Pacts.Values)
+			else
 			{
-				if (p.IsActive) total += p.HeatLevel;
+				_activePactIds.Add(pactId);
 			}
-			return total;
+			OnPactsChanged?.Invoke();
 		}
 
 		/// <summary>
-		/// 结算收益加成倍率 (每个热度等级额外加成 +20% 研发数据与积分)
+		/// 判断指定契约当前是否已激活
+		/// </summary>
+		public bool IsActive(string pactId)
+		{
+			return _activePactIds.Contains(pactId);
+		}
+
+		/// <summary>
+		/// 获取当前已激活的所有契约数量（热度总等级）
+		/// </summary>
+		public int GetTotalHeatLevel()
+		{
+			return _activePactIds.Count;
+		}
+
+		/// <summary>
+		/// 结算收益加成倍率 (基于 JSON 中定义的 scrapBonusMultiplier 动态求和)
 		/// </summary>
 		public float GetScoreRewardMultiplier()
 		{
-			return 1.0f + (GetTotalHeatLevel() * 0.20f);
+			float totalBonus = 0.0f;
+			foreach (var id in _activePactIds)
+			{
+				if (DataManager.Instance.Pacts.TryGet(id, out var pact))
+				{
+					totalBonus += pact!.ScrapBonusMultiplier;
+				}
+			}
+			return 1.0f + totalBonus;
 		}
 
-		public bool IsActive(PactId id)
+		/// <summary>
+		/// 获取当前已激活的所有契约数据列表
+		/// </summary>
+		public List<CalamityPactDef> GetActivePacts()
 		{
-			return Pacts.TryGetValue(id, out var p) && p.IsActive;
+			var result = new List<CalamityPactDef>();
+			foreach (var id in _activePactIds)
+			{
+				if (DataManager.Instance.Pacts.TryGet(id, out var pact))
+				{
+					result.Add(pact!);
+				}
+			}
+			return result;
+		}
+
+		/// <summary>
+		/// 清空所有激活状态（新一轮出击或战役重置时调用）
+		/// </summary>
+		public void Reset()
+		{
+			_activePactIds.Clear();
+			OnPactsChanged?.Invoke();
 		}
 	}
 }
 </file>
 
-<file path="Scripts/World/Pacts/CalamityPactModels.cs.uid">
+<file path="Scripts/World/Pacts/CalamityPactManager.cs.uid">
 uid://cqww7nbrra3uc
 </file>
 
@@ -23422,6 +25363,867 @@ editor/scale_with_editor_scale=false
 editor/convert_colors_with_editor_theme=false
 </file>
 
+<file path="Scripts/Data/Models/DataModels.cs">
+using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace BreakerProtocol.Data.Models
+{
+	/// <summary>
+	/// 引脚方向类型
+	/// </summary>
+	public enum PinType
+	{
+		IN,
+		OUT
+	}
+
+	/// <summary>
+	/// 引脚数据结构定义
+	/// </summary>
+	public class PinDefinition
+	{
+		[JsonPropertyName("pinId")] public string PinId { get; set; } = string.Empty;
+		[JsonPropertyName("type")] public string Type { get; set; } = "IN"; // "IN" 或 "OUT"
+		[JsonPropertyName("localGridX")] public int LocalGridX { get; set; } = 0;
+		[JsonPropertyName("localGridY")] public int LocalGridY { get; set; } = 0;
+		[JsonPropertyName("category")] public string Category { get; set; } = "Standard";
+	}
+
+	/// <summary>
+	/// 单个构件完整定义模型 (对应 core_data/modules/*.json)
+	/// </summary>
+	public class ModuleDataDefinition
+	{
+		[JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+		[JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+		[JsonPropertyName("faction")] public string Faction { get; set; } = "Universal"; // HeavyFoundry / VoidSyndicate / BioChitin / Universal
+		[JsonPropertyName("category")] public string Category { get; set; } = "Weapon"; // PowerSource / Weapon / Modifier / Armor / Thruster / Logistics
+		
+		[JsonPropertyName("width")] public int Width { get; set; } = 1;
+		[JsonPropertyName("height")] public int Height { get; set; } = 1;
+		[JsonPropertyName("mass")] public float Mass { get; set; } = 5.0f; // 吨
+		[JsonPropertyName("baseHp")] public float BaseHp { get; set; } = 200.0f;
+		[JsonPropertyName("armorResistance")] public float ArmorResistance { get; set; } = 10.0f;
+		
+		[JsonPropertyName("spritePath")] public string SpritePath { get; set; } = string.Empty;
+		[JsonPropertyName("tags")] public string[] Tags { get; set; } = Array.Empty<string>();
+		[JsonPropertyName("pins")] public PinDefinition[] Pins { get; set; } = Array.Empty<PinDefinition>();
+		
+		// 动态附加的武器与效果参数（存储为原始 JsonElement，交由 EffectProcessor 解析）
+		[JsonPropertyName("properties")] public JsonElement Properties { get; set; }
+	}
+}
+</file>
+
+<file path="Scripts/Test/Test_Task03.cs">
+using Godot;
+using BreakerProtocol.Core;
+
+namespace BreakerProtocol.Test
+{
+	/// <summary>
+	/// TASK-03 交互式热重载验证场景
+	/// 实时显示当前注册表中的磁轨炮参数，直观验证外部 JSON 修改后瞬间生效
+	/// </summary>
+	public partial class Test_Task03 : Control
+	{
+		private Label _infoLabel = null!;
+		private Label _tipsLabel = null!;
+
+		public override void _Ready()
+		{
+			// 1. 创建 UI 显示面板
+			_infoLabel = new Label
+			{
+				Position = new Vector2(50, 50),
+				Size = new Vector2(800, 400)
+			};
+			_infoLabel.AddThemeFontSizeOverride("font_size", 20);
+			_infoLabel.AddThemeColorOverride("font_color", new Color(0.2f, 1.0f, 0.4f));
+			AddChild(_infoLabel);
+
+			_tipsLabel = new Label
+			{
+				Position = new Vector2(50, 480),
+				Size = new Vector2(800, 100),
+				Text = "【热重载实时测试指南】\n" +
+					   "1. 保持游戏窗口运行；\n" +
+					   "2. 打开 core_data/modules/heavy_railgun.json；\n" +
+					   "3. 修改 'mass' (比如改为 99.0) 或 'name' 并保存 (Ctrl+S)；\n" +
+                       "4. 观察上方数据面板是否瞬间发生变化！"
+			};
+			_tipsLabel.AddThemeFontSizeOverride("font_size", 16);
+			_tipsLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.9f, 0.3f));
+			AddChild(_tipsLabel);
+
+			// 2. 监听全局热重载信号
+			DataManager.Instance.OnDataReloaded += RefreshDisplay;
+
+			// 3. 初始刷新
+			RefreshDisplay();
+		}
+
+		private void RefreshDisplay()
+		{
+			if (DataManager.Instance.Modules.TryGet("hf_wep_railgun_h", out var railgun))
+			{
+				_infoLabel.Text = $"【《断路协议》TASK-03 构件热重载实时监控】\n" +
+								  $"------------------------------------------------------------\n" +
+								  $"构件 ID:      {railgun!.Id}\n" +
+								  $"显示名称:    {railgun.Name}\n" +
+								  $"所属阵营:    {railgun.Faction}\n" +
+								  $"构件尺寸:    {railgun.Width} x {railgun.Height} GU\n" +
+								  $"装载质量:    {railgun.Mass:F1} 吨\n" +
+								  $"基础耐久:    {railgun.BaseHp:F0} HP\n" +
+								  $"装甲抗性:    {railgun.ArmorResistance:F1}\n" +
+								  $"引脚数量:    {railgun.Pins.Length} 个\n" +
+								  $"更新时间:    {System.DateTime.Now:HH:mm:ss.fff}\n" +
+								  $"------------------------------------------------------------\n" +
+								  $"状态: [color=green]热重载监听器运行中 (Ready)[/color]";
+			}
+			else
+			{
+				_infoLabel.Text = "[✘] 未能查询到 hf_wep_railgun_h！";
+			}
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Test/Test_Task32.cs">
+using Godot;
+using BreakerProtocol.Camera;
+using BreakerProtocol.Combat.Effects;
+using BreakerProtocol.Combat.Projectiles;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data;
+using BreakerProtocol.Data.Models;
+using BreakerProtocol.Ship;
+using BreakerProtocol.UI.Events;
+using BreakerProtocol.World.Economy;
+using BreakerProtocol.World.Events;
+
+namespace BreakerProtocol.Test
+{
+	/// <summary>
+	/// TASK-32 交互式验证场景：深空随机异象事件机与多分支文本交互树演练场
+	/// </summary>
+	public partial class Test_Task32 : Node2D
+	{
+		private ShipEntity _playerShip = null!;
+		private CombatCameraController _camera = null!;
+		private JuiceManager _juice = null!;
+		private VfxManager _vfx = null!;
+		private BulletManager _bulletManager = null!;
+		private SpaceEventDialogueUI _eventUI = null!;
+		private RichTextLabel _hudLabel = null!;
+
+		public override void _Ready()
+		{
+			_juice = new JuiceManager { Name = "JuiceManager" };
+			AddChild(_juice);
+
+			_vfx = new VfxManager { Name = "VfxManager" };
+			AddChild(_vfx);
+
+			_bulletManager = new BulletManager { Name = "BulletManager" };
+			AddChild(_bulletManager);
+
+			// 1. 初始化经济系统 (初始 150 废料与 1 算力核心)
+			PlayerEconomyManager.Instance.Reset(initialScraps: 150, initialCores: 1);
+
+			// 2. 生成玩家战舰
+			_playerShip = new ShipEntity
+			{
+				Name = "PlayerCruiser",
+				Position = Vector2.Zero
+			};
+			_playerShip.AddToGroup("Player");
+			_playerShip.AddToGroup("Ship");
+			AddChild(_playerShip);
+
+			if (DataManager.Instance.Blueprints.TryGet("bp_hf_m_anvil", out var anvilBp))
+			{
+				ShipBlueprintLoader.ApplyBlueprint(_playerShip, anvilBp!);
+			}
+
+			// 3. 摄像机
+			_camera = new CombatCameraController
+			{
+				TargetShip = _playerShip
+			};
+			AddChild(_camera);
+			_juice.BindCamera(_camera);
+
+			CreateUI();
+
+			// 默认触发第 2 个事件 (包含 60 废料消耗，方便测试)
+			TriggerEvent("ev_biohazard_smuggler");
+		}
+
+		private void CreateUI()
+		{
+			var canvasLayer = new CanvasLayer();
+			AddChild(canvasLayer);
+
+			_eventUI = new SpaceEventDialogueUI();
+			canvasLayer.AddChild(_eventUI);
+
+			_hudLabel = new RichTextLabel
+			{
+				Position = new Vector2(25, 10),
+				Size = new Vector2(1230, 52),
+				BbcodeEnabled = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			_hudLabel.AddThemeFontSizeOverride("normal_font_size", 13);
+			canvasLayer.AddChild(_hudLabel);
+		}
+
+		private void TriggerEvent(string eventId)
+		{
+			if (SpaceEventDatabase.TryGetEvent(eventId, out var ev))
+			{
+				_eventUI.OpenEvent(ev, _playerShip);
+			}
+		}
+
+		public override void _Process(double delta)
+		{
+			// [按 1~5 键]: 切换 5 大经典异象
+			if (Input.IsKeyPressed(Key.Key1)) TriggerEvent("ev_pioneer_derelict");
+			else if (Input.IsKeyPressed(Key.Key2)) TriggerEvent("ev_biohazard_smuggler");
+			else if (Input.IsKeyPressed(Key.Key3)) TriggerEvent("ev_mech_cultist");
+			else if (Input.IsKeyPressed(Key.Key4)) TriggerEvent("ev_pirate_minefield");
+			else if (Input.IsKeyPressed(Key.Key5)) TriggerEvent("ev_solar_flare");
+
+			// [按 R 键]: 随机触发异象事件
+			if (Input.IsKeyPressed(Key.R))
+			{
+				_eventUI.OpenEvent(SpaceEventDatabase.GetRandomEvent(), _playerShip);
+			}
+
+			// [按 - 键]: 废料清零 (测试置灰拦截与禁用光标)
+			if (Input.IsKeyPressed(Key.Minus) || Input.IsKeyPressed(Key.KpSubtract))
+			{
+				PlayerEconomyManager.Instance.Reset(0, 0);
+			}
+
+			// [按 + 键]: 注入 100 废料
+			if (Input.IsKeyPressed(Key.Equal) || Input.IsKeyPressed(Key.KpAdd))
+			{
+				PlayerEconomyManager.Instance.AddScraps(100);
+			}
+
+			// [按 0 键]: 战舰自损 -150 HP (测试维修效果)
+			if (Input.IsKeyPressed(Key.Key0))
+			{
+				foreach (var m in _playerShip.Grid.Modules)
+				{
+					if (!m.IsDestroyed)
+					{
+						m.CurrentHp = Mathf.Max(20.0f, m.CurrentHp - 150.0f);
+						_playerShip.OnModuleDamaged(m, 150.0f);
+						break;
+					}
+				}
+			}
+
+			// [按 F 键]: 开启强制必失败模式 (100% Failure)
+			if (Input.IsKeyPressed(Key.F))
+			{
+				_eventUI.DebugForceMode = 2;
+			}
+
+			// [按 S 键]: 开启强制必成功模式 (100% Success)
+			if (Input.IsKeyPressed(Key.S))
+			{
+				_eventUI.DebugForceMode = 1;
+			}
+
+			UpdateHUD();
+		}
+
+		private void UpdateHUD()
+		{
+			double fps = Engine.GetFramesPerSecond();
+			float curHp = 0, maxHp = 0;
+			foreach (var m in _playerShip.Grid.Modules)
+			{
+				if (!m.IsDestroyed)
+				{
+					curHp += m.CurrentHp;
+					maxHp += m.MaxHp;
+				}
+			}
+
+			string modeStr = _eventUI.DebugForceMode switch
+			{
+				1 => "[color=green]【强制必成功】[/color]",
+				2 => "[color=red]【强制必失败】[/color]",
+				_ => "[color=yellow]【常规概率】[/color]"
+			};
+
+			DisplayServer.WindowSetTitle($"《断路协议》| 异象事件终端 | 帧率: {fps:F0} FPS | 废料: {PlayerEconomyManager.Instance.Scraps} ⚙️ | 耐久: {curHp:F0}/{maxHp:F0} HP");
+
+			_hudLabel.Text = $"[color=lime]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/color]\n" +
+							 $"[b][color=yellow]【TASK-32 异象演练场】[/color][/b] " +
+							 $"废料: [color=gold]{PlayerEconomyManager.Instance.Scraps} ⚙[/color] | 核心: [color=cyan]{PlayerEconomyManager.Instance.ComputeCores} 💠[/color] | 耐久: [color=lightgreen]{curHp:F0}/{maxHp:F0} HP[/color] | 判定模式: {modeStr}\n" +
+							 $"[调试指令]: [b][color=white][1~5键]: 切换事件 | [-键]: 清空废料至0(测置灰) | [+键]: +100废料 | [0键]: 战舰自损150HP | [F键]: 强制失败 | [S键]: 强制成功[/color][/b]";
+		}
+	}
+}
+</file>
+
+<file path="Scripts/UI/Pacts/CalamityPactsUI.cs">
+using System;
+using System.Collections.Generic;
+using Godot;
+using BreakerProtocol.Data.Models;
+using BreakerProtocol.World.Pacts;
+
+namespace BreakerProtocol.UI.Pacts
+{
+	/// <summary>
+	/// 灾厄契约全息交互面板 (TASK-39：完全由 CalamityPactDef 数据驱动)
+	/// </summary>
+	public partial class CalamityPactsUI : CanvasLayer
+	{
+		private PanelContainer _mainPanel = null!;
+		private HBoxContainer _cardsContainer = null!;
+		private Button _skipButton = null!;
+		private Button _confirmButton = null!;
+
+		public event Action<CalamityPactDef>? OnPactSelected;
+		public event Action? OnStartWithPacts; // 兼容 Task-38 的出击事件
+		public event Action? OnSkipped;
+
+		public override void _Ready()
+		{
+			BuildInterface();
+			Visible = false;
+		}
+
+		private void BuildInterface()
+		{
+			var overlay = new ColorRect
+			{
+				Color = new Color(0, 0, 0, 0.75f),
+				MouseFilter = Control.MouseFilterEnum.Stop
+			};
+			overlay.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+			AddChild(overlay);
+
+			_mainPanel = new PanelContainer();
+			_mainPanel.SetAnchorsPreset(Control.LayoutPreset.Center);
+			_mainPanel.CustomMinimumSize = new Vector2(900, 520);
+			AddChild(_mainPanel);
+
+			var rootVBox = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+			rootVBox.AddThemeConstantOverride("separation", 20);
+			_mainPanel.AddChild(rootVBox);
+
+			var titleLabel = new RichTextLabel
+			{
+				BbcodeEnabled = true,
+				Text = "[center][b][font_size=28][color=crimson]✦ 虚空深处之灾厄契约 ✦[/color][/font_size][/b]\n" +
+					   "[color=gray]签署灾厄法则以换取高额打捞产出与能量超载[/color][/center]",
+				FitContent = true,
+				CustomMinimumSize = new Vector2(800, 65),
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			rootVBox.AddChild(titleLabel);
+
+			_cardsContainer = new HBoxContainer
+			{
+				Alignment = BoxContainer.AlignmentMode.Center
+			};
+			_cardsContainer.AddThemeConstantOverride("separation", 20);
+			rootVBox.AddChild(_cardsContainer);
+
+			var btnHBox = new HBoxContainer
+			{
+				Alignment = BoxContainer.AlignmentMode.Center
+			};
+			btnHBox.AddThemeConstantOverride("separation", 30);
+			rootVBox.AddChild(btnHBox);
+
+			_confirmButton = new Button
+			{
+				Text = "确认签署并出击",
+				CustomMinimumSize = new Vector2(180, 40)
+			};
+			_confirmButton.Pressed += () =>
+			{
+				Visible = false;
+				OnStartWithPacts?.Invoke();
+			};
+			btnHBox.AddChild(_confirmButton);
+
+			_skipButton = new Button
+			{
+				Text = "放弃签署 (保持现状)",
+				CustomMinimumSize = new Vector2(180, 40)
+			};
+			_skipButton.Pressed += () =>
+			{
+				Visible = false;
+				OnSkipped?.Invoke();
+			};
+			btnHBox.AddChild(_skipButton);
+		}
+
+		public void PresentPactChoices(List<CalamityPactDef> candidates)
+		{
+			foreach (var child in _cardsContainer.GetChildren())
+			{
+				child.QueueFree();
+			}
+
+			foreach (var pact in candidates)
+			{
+				var card = CreatePactCard(pact);
+				_cardsContainer.AddChild(card);
+			}
+
+			Visible = true;
+		}
+
+		private PanelContainer CreatePactCard(CalamityPactDef pact)
+		{
+			var cardPanel = new PanelContainer
+			{
+				CustomMinimumSize = new Vector2(260, 300)
+			};
+
+			var cardVBox = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Begin };
+			cardVBox.AddThemeConstantOverride("separation", 12);
+			cardPanel.AddChild(cardVBox);
+
+			var title = new RichTextLabel
+			{
+				BbcodeEnabled = true,
+				Text = $"[center][b][color={pact.ThemeColorHex}]{pact.Title}[/color][/b][/center]",
+				FitContent = true,
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			cardVBox.AddChild(title);
+
+			var desc = new RichTextLabel
+			{
+				BbcodeEnabled = true,
+				Text = $"[color=salmon]▼ 代价惩罚:[/color]\n{pact.Penalty}\n\n" +
+					   $"[color=lightgreen]▲ 赐福增益:[/color]\n{pact.Reward}\n\n" +
+					   $"[color=yellow]✦ 废料收益: +{(pact.ScrapBonusMultiplier * 100):F0}%[/color]",
+				FitContent = true,
+				CustomMinimumSize = new Vector2(230, 140),
+				MouseFilter = Control.MouseFilterEnum.Ignore
+			};
+			cardVBox.AddChild(desc);
+
+			var signBtn = new Button
+			{
+				Text = CalamityPactManager.Instance.IsActive(pact.Id) ? "✔ 已签署生效" : "签署契约",
+				CustomMinimumSize = new Vector2(180, 36)
+			};
+			signBtn.Pressed += () =>
+			{
+				CalamityPactManager.Instance.TogglePact(pact.Id);
+				signBtn.Text = CalamityPactManager.Instance.IsActive(pact.Id) ? "✔ 已签署生效" : "签署契约";
+				OnPactSelected?.Invoke(pact);
+			};
+			cardVBox.AddChild(signBtn);
+
+			return cardPanel;
+		}
+	}
+}
+</file>
+
+<file path="Scripts/World/Events/SpaceEventDatabase.cs">
+using System.Collections.Generic;
+using System.Linq;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
+
+namespace BreakerProtocol.World.Events
+{
+	/// <summary>
+	/// 深空随机异象事件机总管 (完全由 JSON 数据驱动)
+	/// </summary>
+	public static class SpaceEventDatabase
+	{
+		/// <summary>
+		/// 获取当前所有已加载的异象列表 (兼容早期 Task 属性访问)
+		/// </summary>
+		public static List<SpaceEventNode> Events => DataManager.Instance.Events.GetAll().ToList();
+
+		public static bool TryGetEvent(string id, out SpaceEventNode? ev)
+		{
+			return DataManager.Instance.Events.TryGet(id, out ev);
+		}
+
+		public static SpaceEventNode GetRandomEvent()
+		{
+			var list = Events;
+			if (list.Count == 0)
+			{
+				return new SpaceEventNode
+				{
+					Id = "ev_fallback",
+					Title = "【虚空静默】",
+					Description = "雷达未在当前区域扫描到任何有效特征信号。"
+				};
+			}
+			return list[(int)GD.RandRange(0, list.Count - 1)];
+		}
+	}
+}
+</file>
+
+<file path="Scripts/World/Market/BlackMarketService.cs">
+using System.Collections.Generic;
+using System.Linq;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
+
+namespace BreakerProtocol.World.Market
+{
+	public class MarketItem
+	{
+		public string ItemId { get; set; } = string.Empty;
+		public ModuleDataDefinition Definition { get; set; } = null!;
+		public int BuyPrice { get; set; }
+		public bool IsSoldOut { get; set; } = false;
+	}
+
+	/// <summary>
+	/// 黑市定价与货架生成服务 (完全由 market_config.json 驱动)
+	/// </summary>
+	public static class BlackMarketService
+	{
+		public static List<MarketItem> GenerateMarketStock(int count = -1)
+		{
+			var result = new List<MarketItem>();
+			var allModules = DataManager.Instance.Modules.GetAll().ToList();
+			if (allModules.Count == 0) return result;
+
+			int finalCount = count > 0 ? count : DataManager.Instance.MarketConfig.DefaultStockCount;
+			var shuffled = allModules.OrderBy(_ => GD.Randf()).Take(finalCount);
+
+			foreach (var mod in shuffled)
+			{
+				int price = CalculateBuyPrice(mod);
+				result.Add(new MarketItem
+				{
+					ItemId = mod.Id,
+					Definition = mod,
+					BuyPrice = price,
+					IsSoldOut = false
+				});
+			}
+			return result;
+		}
+
+		public static int CalculateBuyPrice(ModuleDataDefinition def)
+		{
+			var cfg = DataManager.Instance.MarketConfig;
+			int basePrice = 50;
+			if (cfg.CategoryBasePrices.TryGetValue(def.Category, out int cfgPrice))
+			{
+				basePrice = cfgPrice;
+			}
+
+			float hpFactor = Mathf.Clamp(def.BaseHp / 200.0f, 0.8f, 2.5f);
+			return (int)(basePrice * hpFactor);
+		}
+
+		public static int CalculateSellPrice(ModuleDataDefinition def, float currentHpRatio = 1.0f)
+		{
+			int fullBuyPrice = CalculateBuyPrice(def);
+			float scrapRate = DataManager.Instance.MarketConfig.ScrapResellRate;
+			return Mathf.Max(15, (int)(fullBuyPrice * scrapRate * Mathf.Clamp(currentHpRatio, 0.3f, 1.0f)));
+		}
+	}
+}
+</file>
+
+<file path="Scripts/World/Meta/MetaProgressionManager.cs">
+using System;
+using System.Collections.Generic;
+using Godot;
+using BreakerProtocol.Ship;
+using BreakerProtocol.World.Economy;
+
+namespace BreakerProtocol.World.Meta
+{
+	public enum TechCategory
+	{
+		Metallurgy,  // 重工冶金 (防护、装甲、爆甲)
+		Electronics, // 超频电容 (配线、经济、黑客)
+		Propulsion   // 矢量推进 (机动、刹车、航道)
+	}
+
+	/// <summary>
+	/// 单个 Meta 科技节点数据模型
+	/// </summary>
+	public class MetaTechNode
+	{
+		public string Id { get; set; } = string.Empty;
+		public string Name { get; set; } = string.Empty;
+		public TechCategory Category { get; set; }
+		public int Tier { get; set; } = 1;
+		public int Cost { get; set; } = 50;
+		public string Description { get; set; } = string.Empty;
+		public string? PrerequisiteId { get; set; }
+		public bool IsUnlocked { get; set; } = false;
+		public Vector2 DisplayPosition { get; set; }
+	}
+
+	/// <summary>
+	/// 局外永久 Meta 科技树总控中枢 (单例)
+	/// </summary>
+	public class MetaProgressionManager
+	{
+		private static MetaProgressionManager? _instance;
+		public static MetaProgressionManager Instance => _instance ??= new MetaProgressionManager();
+
+		public int DataFragments { get; private set; } = 280;
+
+		public Dictionary<string, MetaTechNode> AllTechs { get; } = new();
+		public event Action<int>? OnDataFragmentsChanged;
+		public event Action<MetaTechNode>? OnTechUnlocked;
+
+		public MetaProgressionManager()
+		{
+			InitializeDatabase();
+		}
+
+		private void InitializeDatabase()
+		{
+			AllTechs.Clear();
+
+			// 1. 重工冶金分支 (Metallurgy)
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_meta_armor_1",
+				Name = "复合重装甲渗碳",
+				Category = TechCategory.Metallurgy,
+				Tier = 1,
+				Cost = 60,
+				Description = "全舰所有装甲与结构构件的基础耐久度永久提升 +15%。",
+				DisplayPosition = new Vector2(220, 200)
+			});
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_meta_ramming_2",
+				Name = "高频冲压撞角",
+				Category = TechCategory.Metallurgy,
+				Tier = 2,
+				Cost = 120,
+				PrerequisiteId = "tech_meta_armor_1",
+				Description = "舰体高速撞击敌舰时动能伤害提升 +35%，自身受到的撞击反作用力降低 25%。",
+				DisplayPosition = new Vector2(220, 320)
+			});
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_meta_ablative_3",
+				Name = "预应力战术爆甲",
+				Category = TechCategory.Metallurgy,
+				Tier = 3,
+				Cost = 200,
+				PrerequisiteId = "tech_meta_ramming_2",
+				Description = "绝境过载爆甲脱困机构无需改装，开局初始自带完整装药。",
+				DisplayPosition = new Vector2(220, 440)
+			});
+
+			// 2. 超频电容分支 (Electronics)
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_elec_bus_1",
+				Name = "超导低温配线母线",
+				Category = TechCategory.Electronics,
+				Tier = 1,
+				Cost = 60,
+				Description = "脉冲电路的信号衰减与发热耗损降低 20%，供电效率显著提高。",
+				DisplayPosition = new Vector2(580, 200)
+			});
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_elec_economy_2",
+				Name = "废土走私暗格",
+				Category = TechCategory.Electronics,
+				Tier = 2,
+				Cost = 120,
+				PrerequisiteId = "tech_elec_bus_1",
+				Description = "每次开启新星区航行时，开局初始废料额外获赠 +150 ⚙。",
+				DisplayPosition = new Vector2(580, 320)
+			});
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_elec_hacker_3",
+				Name = "深空断路解算矩阵",
+				Category = TechCategory.Electronics,
+				Tier = 3,
+				Cost = 200,
+				PrerequisiteId = "tech_elec_economy_2",
+				Description = "遭遇深空异象与未知事件时，所有高风险分支的检定成功率常驻 +15%。",
+				DisplayPosition = new Vector2(580, 440)
+			});
+
+			// 3. 矢量推进分支 (Propulsion)
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_prop_rcs_1",
+				Name = "矢量姿态高压喷口",
+				Category = TechCategory.Propulsion,
+				Tier = 1,
+				Cost = 60,
+				Description = "RCS 姿态调整回转扭矩提升 +25%，舰首瞄准指向更加迅捷精准。",
+				DisplayPosition = new Vector2(940, 200)
+			});
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_prop_brake_2",
+				Name = "电磁反喷阻尼过载",
+				Category = TechCategory.Propulsion,
+				Tier = 2,
+				Cost = 120,
+				PrerequisiteId = "tech_prop_rcs_1",
+				Description = "巡航阻尼开启状态下的急停刹车反推力提升 +30%，摆脱惯性漂移更快。",
+				DisplayPosition = new Vector2(940, 320)
+			});
+			AddTech(new MetaTechNode
+			{
+				Id = "tech_prop_jump_3",
+				Name = "跃迁引擎超频预热",
+				Category = TechCategory.Propulsion,
+				Tier = 3,
+				Cost = 200,
+				PrerequisiteId = "tech_prop_brake_2",
+				Description = "星区生成时，敌方追击舰队前线起始落后距离额外增加 +1.0 星区列！",
+				DisplayPosition = new Vector2(940, 440)
+			});
+		}
+
+		private void AddTech(MetaTechNode tech)
+		{
+			AllTechs[tech.Id] = tech;
+		}
+
+		public void AddDataFragments(int amount)
+		{
+			if (amount <= 0) return;
+			DataFragments += amount;
+			OnDataFragmentsChanged?.Invoke(DataFragments);
+		}
+
+		public void SetDataFragments(int amount)
+		{
+			DataFragments = Mathf.Max(0, amount);
+			OnDataFragmentsChanged?.Invoke(DataFragments);
+		}
+
+		public bool UnlockTech(string techId)
+		{
+			if (!AllTechs.TryGetValue(techId, out var tech)) return false;
+			if (tech.IsUnlocked) return false;
+
+			if (!string.IsNullOrEmpty(tech.PrerequisiteId))
+			{
+				if (!AllTechs.TryGetValue(tech.PrerequisiteId, out var pre) || !pre.IsUnlocked)
+				{
+					return false;
+				}
+			}
+
+			if (DataFragments >= tech.Cost)
+			{
+				DataFragments -= tech.Cost;
+				tech.IsUnlocked = true;
+				OnDataFragmentsChanged?.Invoke(DataFragments);
+				OnTechUnlocked?.Invoke(tech);
+				return true;
+			}
+
+			return false;
+		}
+
+		public void ResetAllTechs()
+		{
+			int refund = 0;
+			foreach (var tech in AllTechs.Values)
+			{
+				if (tech.IsUnlocked)
+				{
+					refund += tech.Cost;
+					tech.IsUnlocked = false;
+				}
+			}
+			DataFragments += refund;
+			OnDataFragmentsChanged?.Invoke(DataFragments);
+		}
+
+		/// <summary>
+		/// 从存档中原子化装载母港科技与碎片状态 (专供 SaveManager.LoadMeta 调用)
+		/// </summary>
+		public void LoadState(int fragments, List<string>? unlockedTechIds)
+		{
+			// 1. 重置全部科技解锁标记 (不退款)
+			foreach (var tech in AllTechs.Values)
+			{
+				tech.IsUnlocked = false;
+			}
+
+			// 2. 精确覆盖碎片资产
+			DataFragments = Mathf.Max(0, fragments);
+
+			// 3. 标记已解锁科技
+			if (unlockedTechIds != null)
+			{
+				foreach (var techId in unlockedTechIds)
+				{
+					if (AllTechs.TryGetValue(techId, out var tech))
+					{
+						tech.IsUnlocked = true;
+					}
+				}
+			}
+
+			OnDataFragmentsChanged?.Invoke(DataFragments);
+		}
+
+		public void ApplyMetaBuffsToNewRun(ShipEntity ship)
+		{
+			if (IsUnlocked("tech_elec_economy_2"))
+			{
+				PlayerEconomyManager.Instance.AddScraps(150);
+			}
+
+			if (IsUnlocked("tech_meta_armor_1") && ship.Grid != null)
+			{
+				foreach (var m in ship.Grid.Modules)
+				{
+					if (m.Definition.Category == "Armor" || m.Definition.Category == "Hull")
+					{
+						m.CurrentHp = m.MaxHp * 1.15f;
+					}
+				}
+			}
+		}
+
+		public bool IsUnlocked(string techId)
+		{
+			return AllTechs.TryGetValue(techId, out var t) && t.IsUnlocked;
+		}
+	}
+}
+</file>
+
 <file path="project.godot">
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
@@ -23438,10 +26240,6 @@ config_version=5
 config/name="Breaker Protocol"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
-
-[autoload]
-
-DataManager="*uid://d1c20gvkuw67"
 
 [display]
 
@@ -23461,6 +26259,535 @@ project/assembly_name="Breaker Protocol"
 
 textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
+</file>
+
+<file path="Scripts/Core/DataManager.cs">
+using System;
+using System.IO;
+using System.Text.Json;
+using Godot;
+using BreakerProtocol.Data.Models;
+using BreakerProtocol.Data.Registries;
+using BreakerProtocol.Data.Validation;
+
+namespace BreakerProtocol.Core
+{
+	/// <summary>
+	/// 全局数据注册与配置驱动总管中枢 (单例模式)
+	/// </summary>
+	public class DataManager
+	{
+		private static DataManager? _instance;
+		public static DataManager Instance => _instance ??= new DataManager();
+
+		// 内循环注册表
+		public Registry<ModuleDataDefinition> Modules { get; } = new("Modules");
+		public Registry<BlueprintDataDefinition> Blueprints { get; } = new("Blueprints");
+
+		// 外循环注册表
+		public Registry<SpaceEventNode> Events { get; } = new("Events");
+		public Registry<TechNodeDef> Techs { get; } = new("Techs");
+		public Registry<CalamityPactDef> Pacts { get; } = new("Pacts");
+		public Registry<DropTableDef> DropTables { get; } = new("DropTables");
+		public Registry<EncounterDef> Encounters { get; } = new("Encounters");
+		public MarketConfigDef MarketConfig { get; private set; } = new();
+
+		public event Action? OnDataReloaded;
+
+		private DataManager()
+		{
+			LoadAllData();
+		}
+
+		public void LoadAllData()
+		{
+			GD.Print("[DataManager] 开始全域数据驱动扫描加载...");
+
+			Modules.Clear();
+			Blueprints.Clear();
+			Events.Clear();
+			Techs.Clear();
+			Pacts.Clear();
+			DropTables.Clear();
+			Encounters.Clear();
+
+			string baseDir = ProjectSettings.GlobalizePath("res://");
+			string coreDataDir = Path.Combine(baseDir, "core_data");
+
+			// 1. 基础构件与蓝图
+			LoadModulesAndBlueprints(coreDataDir);
+
+			// 2. 外循环与规则表
+			LoadEvents(Path.Combine(coreDataDir, "events"));
+			LoadTechs(Path.Combine(coreDataDir, "techs"));
+			LoadPacts(Path.Combine(coreDataDir, "pacts"));
+			LoadMarketConfig(Path.Combine(coreDataDir, "markets"));
+
+			// 3. TASK-40 新增：掉落表与遭遇战池
+			LoadDropTables(Path.Combine(coreDataDir, "drops"));
+			LoadEncounters(Path.Combine(coreDataDir, "encounters"));
+
+			// 4. 数据一致性校验
+			DataValidator.ValidateAll(this);
+
+			GD.Print($"[DataManager] 全域数据装载完成: {Modules.Count} 构件 | {Blueprints.Count} 蓝图 | {Events.Count} 异象 | {Techs.Count} 科技 | {Pacts.Count} 契约 | {DropTables.Count} 掉落池 | {Encounters.Count} 遭遇池");
+			OnDataReloaded?.Invoke();
+		}
+
+		private void LoadModulesAndBlueprints(string rootDir)
+		{
+			if (!Directory.Exists(rootDir)) return;
+
+			foreach (var file in Directory.EnumerateFiles(rootDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					if (file.Contains("blueprints"))
+					{
+						var bp = JsonSerializer.Deserialize<BlueprintDataDefinition>(text);
+						if (bp != null && !string.IsNullOrEmpty(bp.Id)) Blueprints.Register(bp.Id, bp);
+					}
+					else if (file.Contains("modules"))
+					{
+						var mod = JsonSerializer.Deserialize<ModuleDataDefinition>(text);
+						if (mod != null && !string.IsNullOrEmpty(mod.Id)) Modules.Register(mod.Id, mod);
+					}
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析文件失败: {file} | 错误: {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadEvents(string eventsDir)
+		{
+			if (!Directory.Exists(eventsDir)) return;
+			foreach (var file in Directory.EnumerateFiles(eventsDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					var ev = JsonSerializer.Deserialize<SpaceEventNode>(text);
+					if (ev != null && !string.IsNullOrEmpty(ev.Id)) Events.Register(ev.Id, ev);
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析异象失败: {file} | {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadTechs(string techsDir)
+		{
+			if (!Directory.Exists(techsDir)) return;
+			foreach (var file in Directory.EnumerateFiles(techsDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					var tree = JsonSerializer.Deserialize<TechTreeFileDef>(text);
+					if (tree?.TechNodes != null)
+					{
+						foreach (var node in tree.TechNodes)
+						{
+							if (!string.IsNullOrEmpty(node.Id)) Techs.Register(node.Id, node);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析科技树失败: {file} | {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadPacts(string pactsDir)
+		{
+			if (!Directory.Exists(pactsDir)) return;
+			foreach (var file in Directory.EnumerateFiles(pactsDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					var pack = JsonSerializer.Deserialize<CalamityPactsFileDef>(text);
+					if (pack?.Pacts != null)
+					{
+						foreach (var pact in pack.Pacts)
+						{
+							if (!string.IsNullOrEmpty(pact.Id)) Pacts.Register(pact.Id, pact);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析灾厄契约失败: {file} | {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadMarketConfig(string marketDir)
+		{
+			if (!Directory.Exists(marketDir)) return;
+			string configPath = Path.Combine(marketDir, "market_config.json");
+			if (File.Exists(configPath))
+			{
+				try
+				{
+					string text = File.ReadAllText(configPath);
+					var cfg = JsonSerializer.Deserialize<MarketConfigDef>(text);
+					if (cfg != null) MarketConfig = cfg;
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析黑市配置失败: {configPath} | {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadDropTables(string dropsDir)
+		{
+			if (!Directory.Exists(dropsDir)) return;
+			foreach (var file in Directory.EnumerateFiles(dropsDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					var pack = JsonSerializer.Deserialize<DropTableFileDef>(text);
+					if (pack?.DropTables != null)
+					{
+						foreach (var table in pack.DropTables)
+						{
+							if (!string.IsNullOrEmpty(table.TableId)) DropTables.Register(table.TableId, table);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析掉落池失败: {file} | {ex.Message}");
+				}
+			}
+		}
+
+		private void LoadEncounters(string encountersDir)
+		{
+			if (!Directory.Exists(encountersDir)) return;
+			foreach (var file in Directory.EnumerateFiles(encountersDir, "*.json", SearchOption.AllDirectories))
+			{
+				try
+				{
+					string text = File.ReadAllText(file);
+					var pack = JsonSerializer.Deserialize<EncounterPoolFileDef>(text);
+					if (pack?.Encounters != null)
+					{
+						foreach (var enc in pack.Encounters)
+						{
+							if (!string.IsNullOrEmpty(enc.EncounterId)) Encounters.Register(enc.EncounterId, enc);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"[DataManager] 解析遭遇战失败: {file} | {ex.Message}");
+				}
+			}
+		}
+	}
+}
+</file>
+
+<file path="Scripts/Data/Validation/DataValidator.cs">
+using System;
+using System.Collections.Generic;
+using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.Data.Models;
+
+namespace BreakerProtocol.Data.Validation
+{
+	/// <summary>
+	/// 校验严重等级
+	/// </summary>
+	public enum ValidationSeverity
+	{
+		Info,
+		Warning,
+		Error
+	}
+
+	/// <summary>
+	/// 单条校验结果条目
+	/// </summary>
+	public class ValidationEntry
+	{
+		public ValidationSeverity Severity { get; set; }
+		public string Message { get; set; } = string.Empty;
+
+		public ValidationEntry(ValidationSeverity severity, string message)
+		{
+			Severity = severity;
+			Message = message;
+		}
+	}
+
+	/// <summary>
+	/// 强类型全域数据合规校验器
+	/// 负责在构件/蓝图/外循环规则注册前拦截非法配置
+	/// </summary>
+	public static class DataValidator
+	{
+		/// <summary>
+		/// 全局全量校验入口（在 DataManager 加载完毕后统一调用）
+		/// </summary>
+		public static bool ValidateAll(DataManager dm)
+		{
+			bool allValid = true;
+
+			// 1. 校验深空异象事件合法性
+			foreach (var ev in dm.Events.GetAll())
+			{
+				if (string.IsNullOrWhiteSpace(ev.Title))
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 异象事件 [{ev.Id}] 缺少标题 (Title)！[/color]");
+					allValid = false;
+				}
+
+				if (ev.Choices == null || ev.Choices.Count == 0)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 异象事件 [{ev.Id}] 没有任何可选分支选项 (Choices)！[/color]");
+					allValid = false;
+				}
+				else
+				{
+					foreach (var choice in ev.Choices)
+					{
+						if (choice.SuccessRate < 0.0f || choice.SuccessRate > 1.0f)
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 异象事件 [{ev.Id}] 选项 '{choice.ChoiceText}' 的成功率超出 [0.0, 1.0] 范围: {choice.SuccessRate}[/color]");
+							allValid = false;
+						}
+					}
+				}
+			}
+
+			// 2. 校验科技树节点与前置依赖
+			foreach (var tech in dm.Techs.GetAll())
+			{
+				if (tech.CoreCost < 0)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 科技节点 [{tech.Id}] 的算力核心消耗为负数: {tech.CoreCost}[/color]");
+					allValid = false;
+				}
+
+				if (tech.Prerequisites != null)
+				{
+					foreach (var req in tech.Prerequisites)
+					{
+						if (!dm.Techs.Contains(req))
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 科技节点 [{tech.Id}] 依赖了不存在的前置科技 ID: [{req}][/color]");
+							allValid = false;
+						}
+					}
+				}
+			}
+
+			// 3. 校验灾厄契约
+			foreach (var pact in dm.Pacts.GetAll())
+			{
+				if (pact.ScrapBonusMultiplier < 0.0f)
+				{
+					GD.PrintRich($"[color=yellow][DataValidator:Warning] 灾厄契约 [{pact.Id}] 废料倍率加成为负数: {pact.ScrapBonusMultiplier}[/color]");
+				}
+			}
+
+			// 4. 校验黑市经济规则
+			var cfg = dm.MarketConfig;
+			if (cfg.DefaultStockCount <= 0)
+			{
+				GD.PrintRich("[color=yellow][DataValidator:Warning] 黑市默认货架数量 DefaultStockCount <= 0，已自动重置为默认 5 格。[/color]");
+				cfg.DefaultStockCount = 5;
+			}
+
+			if (cfg.ScrapResellRate <= 0.0f || cfg.ScrapResellRate > 1.0f)
+			{
+				GD.PrintRich($"[color=yellow][DataValidator:Warning] 黑市折旧回购率 ScrapResellRate ({cfg.ScrapResellRate}) 异常，建议在 (0.0, 1.0] 区间。[/color]");
+			}
+
+			// 5. 校验掉落表合法性 (TASK-40 新增)
+			foreach (var table in dm.DropTables.GetAll())
+			{
+				if (table.MinScraps < 0 || table.MaxScraps < table.MinScraps)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 掉落表 [{table.TableId}] 废料区间非法: [{table.MinScraps}, {table.MaxScraps}][/color]");
+					allValid = false;
+				}
+
+				if (table.Entries != null)
+				{
+					foreach (var entry in table.Entries)
+					{
+						if (entry.Weight < 0)
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 掉落表 [{table.TableId}] 存在负数权重: {entry.Weight}[/color]");
+							allValid = false;
+						}
+						if (entry.DropType == DropItemType.Module && !string.IsNullOrEmpty(entry.ModuleId))
+						{
+							if (!dm.Modules.Contains(entry.ModuleId))
+							{
+								GD.PrintRich($"[color=yellow][DataValidator:Warning] 掉落表 [{table.TableId}] 引用了不存在的构件 ID: [{entry.ModuleId}][/color]");
+							}
+						}
+					}
+				}
+			}
+
+			// 6. 校验遭遇战合法性 (TASK-40 新增)
+			foreach (var enc in dm.Encounters.GetAll())
+			{
+				if (enc.Ships == null || enc.Ships.Count == 0)
+				{
+					GD.PrintRich($"[color=red][DataValidator:Error] 遭遇战 [{enc.EncounterId}] 未配置任何战舰！[/color]");
+					allValid = false;
+				}
+				else
+				{
+					foreach (var ship in enc.Ships)
+					{
+						if (!dm.Blueprints.Contains(ship.BlueprintId))
+						{
+							GD.PrintRich($"[color=red][DataValidator:Error] 遭遇战 [{enc.EncounterId}] 引用了不存在的战舰蓝图: [{ship.BlueprintId}][/color]");
+							allValid = false;
+						}
+					}
+				}
+			}
+
+			if (allValid)
+			{
+				GD.PrintRich("[color=green][DataValidator:Info] ✔ 全域数据（构件、蓝图、异象、科技树、契约、黑市、掉落池、遭遇池）规则校验全部通过！[/color]");
+			}
+
+			return allValid;
+		}
+
+		/// <summary>
+		/// 校验单个构件定义的合法性 (保持原版几何与引脚检查)
+		/// </summary>
+		/// <param name="module">待校验的构件数据</param>
+		/// <param name="sourceFilePath">来源文件路径（用于报错追踪）</param>
+		/// <param name="entries">输出的错误/警告列表</param>
+		/// <returns>若无 Error 级别错误则返回 true</returns>
+		public static bool ValidateModule(ModuleDataDefinition module, string sourceFilePath, out List<ValidationEntry> entries)
+		{
+			entries = new List<ValidationEntry>();
+			bool hasFatalError = false;
+
+			// 1. 基础字段非空检查
+			if (string.IsNullOrWhiteSpace(module.Id))
+			{
+				entries.Add(new ValidationEntry(ValidationSeverity.Error, "构件 ID 不能为空！"));
+				hasFatalError = true;
+			}
+
+			if (string.IsNullOrWhiteSpace(module.Name))
+			{
+				entries.Add(new ValidationEntry(ValidationSeverity.Warning, $"构件 [{module.Id}] 未填写显示名称 (Name)。"));
+			}
+
+			// 2. 几何网格模数检查 (规范 02)
+			if (module.Width <= 0 || module.Height <= 0)
+			{
+				entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 的尺寸非法：Width={module.Width}, Height={module.Height}（宽高必须大于等于 1）！"));
+				hasFatalError = true;
+			}
+			else if (module.Width > 8 || module.Height > 8)
+			{
+				entries.Add(new ValidationEntry(ValidationSeverity.Warning, $"构件 [{module.Id}] 尺寸过大 ({module.Width}x{module.Height})，超过了 8x8 推荐上限。"));
+			}
+
+			// 3. 物理属性合理性检查
+			if (module.Mass <= 0.0f)
+			{
+				entries.Add(new ValidationEntry(ValidationSeverity.Warning, $"构件 [{module.Id}] 质量 <= 0，已自动修正为默认质量 1.0t。"));
+				module.Mass = 1.0f;
+			}
+
+			if (module.BaseHp <= 0.0f)
+			{
+				entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 基础耐久 BaseHp 必须大于 0！"));
+				hasFatalError = true;
+			}
+
+			// 4. 引脚对齐与越界检查 (规范 03)
+			if (module.Pins != null && module.Pins.Length > 0)
+			{
+				HashSet<string> pinIdSet = new();
+				HashSet<Vector2I> pinCoordSet = new();
+
+				foreach (var pin in module.Pins)
+				{
+					// 4.1 引脚 ID 唯一性检查
+					if (string.IsNullOrWhiteSpace(pin.PinId))
+					{
+						entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 存在未命名的引脚！"));
+						hasFatalError = true;
+					}
+					else if (!pinIdSet.Add(pin.PinId))
+					{
+						entries.Add(new ValidationEntry(ValidationSeverity.Error, $"构件 [{module.Id}] 存在重复的 PinId: [{pin.PinId}]！"));
+						hasFatalError = true;
+					}
+
+					// 4.2 引脚坐标是否落在构件网格边界内 [0, Width-1] x [0, Height-1]
+					if (pin.LocalGridX < 0 || pin.LocalGridX >= module.Width ||
+						pin.LocalGridY < 0 || pin.LocalGridY >= module.Height)
+					{
+						entries.Add(new ValidationEntry(ValidationSeverity.Error, 
+							$"构件 [{module.Id}] 的引脚 [{pin.PinId}] 坐标越界！坐标: ({pin.LocalGridX}, {pin.LocalGridY})，构件尺寸: {module.Width}x{module.Height}。"));
+						hasFatalError = true;
+					}
+
+					// 4.3 同一格不能有重叠引脚
+					Vector2I coord = new(pin.LocalGridX, pin.LocalGridY);
+					if (!pinCoordSet.Add(coord))
+					{
+						entries.Add(new ValidationEntry(ValidationSeverity.Warning, 
+							$"构件 [{module.Id}] 在局部坐标 ({pin.LocalGridX}, {pin.LocalGridY}) 存在多个重叠引脚。"));
+					}
+
+					// 4.4 引脚方向有效性检查
+					if (pin.Type != "IN" && pin.Type != "OUT")
+					{
+						entries.Add(new ValidationEntry(ValidationSeverity.Error, 
+							$"构件 [{module.Id}] 引脚 [{pin.PinId}] 的 Type [{pin.Type}] 非法！必须是 'IN' 或 'OUT'。"));
+						hasFatalError = true;
+					}
+				}
+			}
+
+			// 5. 打印汇总日志
+			if (entries.Count > 0)
+			{
+				foreach (var entry in entries)
+				{
+					string colorTag = entry.Severity switch
+					{
+						ValidationSeverity.Error => "red",
+						ValidationSeverity.Warning => "yellow",
+						_ => "white"
+					};
+
+					GD.PrintRich($"[color={colorTag}][DataValidator:{entry.Severity}] 文件 [{sourceFilePath}] -> {entry.Message}[/color]");
+				}
+			}
+
+			return !hasFatalError;
+		}
+	}
+}
 </file>
 
 </files>
