@@ -147,7 +147,7 @@ namespace BreakerProtocol.Ship.AI
 				return;
 			}
 
-			// 如果属于编队僚机（且长机存活），始终保持编队协同模式，绝不中途擅自脱节！
+			// 如果属于编队僚机（且长机存活），始终保持编队协同模式
 			bool isFormationFollower = FleetFormationManager.Instance != null &&
 									   FleetFormationManager.Instance.FleetLeader != null &&
 									   GodotObject.IsInstanceValid(FleetFormationManager.Instance.FleetLeader) &&
@@ -217,9 +217,7 @@ namespace BreakerProtocol.Ship.AI
 				case AiState.Engage:
 					if (isNavigatingToFormation)
 					{
-						// ============================================================
-						// 核心算法：雷诺兹 Arrive 闭环速度解算 + 匹配长机航速
-						// ============================================================
+						// 雷诺兹 Arrive 闭环速度解算 + 匹配长机航速
 						const float ArriveRadius = 160.0f;
 						const float MaxFormationSpeed = 300.0f;
 
@@ -231,31 +229,26 @@ namespace BreakerProtocol.Ship.AI
 						}
 						else
 						{
-							// 减速区：随着距离缩短，期望相对速度线性减为 0
 							float speedFraction = distToTarget / ArriveRadius;
 							desiredRelVelocity = toTarget.Normalized() * (MaxFormationSpeed * speedFraction);
 							boost = false;
 						}
 
-						// 合成期望总速度（相对期望速度 + 长机速度）
 						Vector2 desiredTotalVelocity = desiredRelVelocity + leaderVelocity;
 						Vector2 velocityError = desiredTotalVelocity - _ship.LinearVelocity;
 
-						// 将速度误差投影到飞船局部坐标系
 						float forwardError = forward.Dot(velocityError);
 						float rightError = right.Dot(velocityError);
 
-						// 前后推力计算（严格修正 Clamp 逻辑）
 						if (forwardError > 15.0f)
 						{
-							localInput.Y = -Mathf.Clamp(forwardError / 80.0f, 0.2f, 1.0f); // 前进
+							localInput.Y = -Mathf.Clamp(forwardError / 80.0f, 0.2f, 1.0f);
 						}
 						else if (forwardError < -15.0f)
 						{
-							localInput.Y = Mathf.Clamp(-forwardError / 80.0f, 0.2f, 1.0f);  // 反推刹车！
+							localInput.Y = Mathf.Clamp(-forwardError / 80.0f, 0.2f, 1.0f);
 						}
 
-						// 左右 RCS 侧推消除横向漂移
 						if (Mathf.Abs(rightError) > 10.0f)
 						{
 							localInput.X = Mathf.Clamp(rightError / 50.0f, -1.0f, 1.0f);
@@ -263,7 +256,7 @@ namespace BreakerProtocol.Ship.AI
 					}
 					else
 					{
-						// 长机（或独立行动机）：稳健正面推进
+						// 长机/独立行动机推进
 						if (Archetype == AiArchetype.Brawler)
 						{
 							float distPlayer = _ship.GlobalPosition.DistanceTo(CurrentTarget!.GlobalPosition);
@@ -338,11 +331,6 @@ namespace BreakerProtocol.Ship.AI
 			float estimatedBulletSpeed = 650.0f;
 			Vector2 predictedAimPos = PredictLeadPosition(_ship.GlobalPosition, targetPos, targetVel, estimatedBulletSpeed);
 
-			// ============================================================
-			// 瞄准朝向决策：
-			// 僚机离锚点较远 (>80px) 时，机头对准锚点全速推进；
-			// 接近就位后 (<=80px)，机头精准转回锁定玩家！
-			// ============================================================
 			if (FleetFormationManager.Instance != null &&
 				FleetFormationManager.Instance.FleetLeader != null &&
 				GodotObject.IsInstanceValid(FleetFormationManager.Instance.FleetLeader) &&
@@ -394,7 +382,15 @@ namespace BreakerProtocol.Ship.AI
 				_fireCooldown -= dt;
 				if (_fireCooldown <= 0.0f)
 				{
-					_fireCooldown = Archetype == AiArchetype.Brawler ? 0.20f : (Archetype == AiArchetype.KiteSniper ? 0.55f : 0.16f);
+					// 具有战术节奏的开火间隔，避免高射速弹幕秒杀
+					_fireCooldown = Archetype switch
+					{
+						AiArchetype.Brawler    => 0.45f,
+						AiArchetype.KiteSniper => 0.85f,
+						AiArchetype.Swarm      => 0.38f,
+						_                      => 0.50f
+					};
+
 					foreach (var weaponId in _ship.Pulses.WeaponBuffers.Keys)
 					{
 						_ship.Pulses.TriggerWeaponFire(weaponId, out _);
@@ -428,10 +424,10 @@ namespace BreakerProtocol.Ship.AI
 
 		private void TriggerSelfDestruct()
 		{
-			VfxManager.Instance?.SpawnAcidPool(_ship.GlobalPosition, radius: 55.0f, duration: 5.0f);
-			VfxManager.Instance?.SpawnModuleExplosion(_ship.GlobalPosition, new Vector2(80, 80), Colors.LimeGreen, shardCount: 24);
+			VfxManager.Instance?.SpawnAcidPool(_ship.GlobalPosition, radius: 45.0f, duration: 3.5f);
+			VfxManager.Instance?.SpawnModuleExplosion(_ship.GlobalPosition, new Vector2(60, 60), Colors.LimeGreen, shardCount: 16);
 			VfxManager.Instance?.SpawnFloatingText(_ship.GlobalPosition, "☣️ 敌舰绝命撞角自爆！", Colors.LimeGreen);
-			JuiceManager.Instance?.TriggerExplosionJuice(_ship.GlobalPosition, intensity: 1.0f);
+			JuiceManager.Instance?.TriggerExplosionJuice(_ship.GlobalPosition, intensity: 0.75f);
 
 			if (CurrentTarget is ShipEntity targetShip)
 			{
@@ -440,8 +436,9 @@ namespace BreakerProtocol.Ship.AI
 				{
 					if (!m.IsDestroyed)
 					{
-						m.CurrentHp = Mathf.Max(0.0f, m.CurrentHp - 250.0f);
-						targetShip.OnModuleDamaged(m, 250.0f);
+						const float selfDestructDmg = 60.0f;
+						m.CurrentHp = Mathf.Max(0.0f, m.CurrentHp - selfDestructDmg);
+						targetShip.OnModuleDamaged(m, selfDestructDmg);
 						break;
 					}
 				}
