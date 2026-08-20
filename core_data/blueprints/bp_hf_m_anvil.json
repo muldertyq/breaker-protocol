@@ -1,0 +1,22 @@
+{
+  "id": "bp_hf_m_anvil",
+  "name": "“铁砧”级中型重装护卫舰",
+  "faction": "HeavyFoundry",
+  "hullClass": "M",
+  "description": "正面覆盖极厚穿浪装甲，搭载极寒冷凝舱与破城者重型磁轨主炮。",
+  "modules": [
+	{ "moduleId": "hf_source_core_2x2", "gridX": -1, "gridY": 1, "rotation": 0 },
+	{ "moduleId": "hf_mod_cryo_chamber", "gridX": -1, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "hf_wep_railgun_h", "gridX": -1, "gridY": -2, "rotation": 0 },
+	{ "moduleId": "hf_arm_prow_4x1", "gridX": -2, "gridY": -3, "rotation": 0 },
+	{ "moduleId": "hf_arm_plate_2x2", "gridX": -3, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "hf_arm_plate_2x2", "gridX": 1, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "hf_eng_titan_main", "gridX": -1, "gridY": 3, "rotation": 0 },
+	{ "moduleId": "hf_eng_rcs_heavy", "gridX": -3, "gridY": 1, "rotation": 0 },
+	{ "moduleId": "hf_eng_rcs_heavy", "gridX": 2, "gridY": 1, "rotation": 0 }
+  ],
+  "wires": [
+	{ "sourceGridX": -1, "sourceGridY": 1, "targetGridX": -1, "targetGridY": 0 },
+	{ "sourceGridX": 0, "sourceGridY": 0, "targetGridX": 0, "targetGridY": -2 }
+  ]
+}

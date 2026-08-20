@@ -1,0 +1,24 @@
+{
+  "id": "hf_wep_gatling_m",
+  "name": "“火神”中型加特林转轮炮",
+  "faction": "HeavyFoundry",
+  "category": "Weapon",
+  "width": 2,
+  "height": 1,
+  "mass": 10.0,
+  "baseHp": 320.0,
+  "armorResistance": 20.0,
+  "spritePath": "textures/weapons/hf_gatling.png",
+  "pins": [
+	{ "pinId": "power_in", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"baseDamage": 45.0,
+	"baseSpeed": 140.0,
+	"basePierce": 0,
+	"fireRate": 8.0,
+	"effectsOnFire": [
+	  { "type": "RecoilImpulse", "impulse": 400.0 }
+	]
+  }
+}

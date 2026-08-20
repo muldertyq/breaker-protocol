@@ -1,0 +1,20 @@
+{
+  "id": "hf_source_core_2x2",
+  "name": "双联小型核聚变堆",
+  "faction": "HeavyFoundry",
+  "category": "PowerSource",
+  "width": 2,
+  "height": 2,
+  "mass": 20.0,
+  "baseHp": 600.0,
+  "armorResistance": 25.0,
+  "spritePath": "textures/modules/hf_power_core.png",
+  "pins": [
+	{ "pinId": "out_1", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "HeavyPulse" },
+	{ "pinId": "out_2", "type": "OUT", "localGridX": 1, "localGridY": 0, "category": "HeavyPulse" }
+  ],
+  "properties": {
+	"pulseOutput": 2.5,
+	"heatPerSecond": 15.0
+  }
+}

@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://brqsm0w5mdui0"]
+
+[ext_resource type="Script" uid="uid://5jdju3eymsdb" path="res://Scripts/Test/Test_Task04.cs" id="1_amvvj"]
+
+[node name="TestTask04" type="Control" unique_id=196076714]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_amvvj")

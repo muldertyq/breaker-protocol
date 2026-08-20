@@ -1,0 +1,19 @@
+{
+  "id": "vs_source_singularity_3x2",
+  "name": "高维暗物质奇点堆",
+  "faction": "VoidSyndicate",
+  "category": "PowerSource",
+  "width": 3,
+  "height": 2,
+  "mass": 14.0,
+  "baseHp": 420.0,
+  "armorResistance": 15.0,
+  "spritePath": "textures/modules/vs_singularity.png",
+  "pins": [
+	{ "pinId": "out_center", "type": "OUT", "localGridX": 1, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"pulseOutput": 3.5,
+	"heatPerSecond": 8.0
+  }
+}

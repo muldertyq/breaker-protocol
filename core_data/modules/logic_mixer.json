@@ -1,0 +1,20 @@
+{
+  "id": "hf_log_mixer",
+  "name": "混流合成器 (2入1出)",
+  "faction": "Universal",
+  "category": "Logic",
+  "width": 1,
+  "height": 1,
+  "mass": 1.5,
+  "baseHp": 150.0,
+  "armorResistance": 10.0,
+  "spritePath": "textures/modules/logic_mixer.png",
+  "pins": [
+	{ "pinId": "in_a", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "in_b", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_main", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"logicType": "Mixer"
+  }
+}

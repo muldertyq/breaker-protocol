@@ -1,0 +1,22 @@
+{
+  "id": "bc_eng_bio_jet_2x2",
+  "name": "高压生化喷射腺体",
+  "faction": "BioChitin",
+  "category": "Thruster",
+  "width": 2,
+  "height": 2,
+  "mass": 15.0,
+  "baseHp": 480.0,
+  "armorResistance": 20.0,
+  "spritePath": "textures/modules/bc_bio_jet.png",
+  "pins": [
+	{ "pinId": "pwr_in", "type": "IN", "localGridX": 1, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"thrustForce": 30000.0,
+	"boostMultiplier": 1.8,
+	"thrustDirection": "Backward",
+	"flameColor": [0.3, 1.0, 0.4, 0.9],
+	"flameLength": 30.0
+  }
+}

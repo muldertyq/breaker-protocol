@@ -1,0 +1,9 @@
+{
+  "id": "sample_player_mod",
+  "name": "玩家自制高斯炮 Mod",
+  "version": "1.0.1",
+  "author": "Modder_Ace",
+  "description": "新增一把极速轻型高斯副炮。",
+  "priority": 100,
+  "enabled": true
+}

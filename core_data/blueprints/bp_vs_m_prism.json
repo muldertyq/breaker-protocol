@@ -1,0 +1,19 @@
+{
+  "id": "bp_vs_m_prism",
+  "name": "“棱镜”级多棱分光驱逐舰",
+  "faction": "VoidSyndicate",
+  "hullClass": "M",
+  "description": "奇点核心串联多棱镜分光箱，一发激光分裂为三道齐射。",
+  "modules": [
+	{ "moduleId": "vs_source_singularity_3x2", "gridX": -1, "gridY": 1, "rotation": 0 },
+	{ "moduleId": "vs_mod_prism_splitter", "gridX": -1, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "vs_wep_phase_laser_m", "gridX": -1, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "vs_arm_flux_shield_2x1", "gridX": -3, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "vs_arm_flux_shield_2x1", "gridX": 1, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "vs_eng_warp_drive_3x1", "gridX": -1, "gridY": 3, "rotation": 0 }
+  ],
+  "wires": [
+	{ "sourceGridX": 0, "sourceGridY": 1, "targetGridX": 0, "targetGridY": 0 },
+	{ "sourceGridX": 0, "sourceGridY": 0, "targetGridX": 0, "targetGridY": -1 }
+  ]
+}

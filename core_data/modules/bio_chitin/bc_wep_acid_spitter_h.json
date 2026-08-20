@@ -1,0 +1,26 @@
+{
+  "id": "bc_wep_acid_spitter_h",
+  "name": "“腐化”强酸自爆虫巢",
+  "faction": "BioChitin",
+  "category": "Weapon",
+  "width": 3,
+  "height": 2,
+  "mass": 22.0,
+  "baseHp": 520.0,
+  "armorResistance": 25.0,
+  "spritePath": "textures/weapons/bc_acid_spitter.png",
+  "pins": [
+	{ "pinId": "power_in", "type": "IN", "localGridX": 1, "localGridY": 1, "category": "Universal" }
+  ],
+  "properties": {
+	"baseDamage": 380.0,
+	"baseSpeed": 120.0,
+	"basePierce": 1,
+	"pulseCost": 2,
+	"fireRate": 3.0,
+	"effectsOnHit": [
+	  { "type": "ExplodeOnHit", "radiusMeters": 10.0, "aoeDamage": 200.0 },
+	  { "type": "ApplyFire", "burnDps": 40.0 }
+	]
+  }
+}

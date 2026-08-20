@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://dgsin1bc2wgyx"]
+
+[ext_resource type="Script" uid="uid://dhdn4hulj58in" path="res://Scripts/Test/TestPlayerDummy.cs" id="1_fk0tp"]
+[ext_resource type="Script" uid="uid://c348cmajq8trh" path="res://Scripts/Test/BackgroundGrid.cs" id="1_wl21b"]
+[ext_resource type="Texture2D" uid="uid://3y1pmhqnl186" path="res://icon.svg" id="2_wl21b"]
+[ext_resource type="Script" uid="uid://o4hifpdylru5" path="res://Scripts/Camera/CombatCameraController.cs" id="3_na1wp"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_b0r15"]
+size = Vector2(127, 127)
+
+[node name="TestTask01" type="Node2D" unique_id=1465883441]
+
+[node name="BackgroundGrid" type="Node2D" parent="." unique_id=1380280558]
+script = ExtResource("1_wl21b")
+
+[node name="PlayerDummy" type="RigidBody2D" parent="." unique_id=1535491359]
+script = ExtResource("1_fk0tp")
+
+[node name="Sprite2D" type="Sprite2D" parent="PlayerDummy" unique_id=636857975]
+texture = ExtResource("2_wl21b")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayerDummy" unique_id=1128197367]
+position = Vector2(-1.5, -0.5)
+shape = SubResource("RectangleShape2D_b0r15")
+
+[node name="CombatCamera" type="Camera2D" parent="." unique_id=957544871 node_paths=PackedStringArray("TargetShip")]
+script = ExtResource("3_na1wp")
+TargetShip = NodePath("../PlayerDummy")

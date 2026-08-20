@@ -1,0 +1,26 @@
+{
+  "id": "hf_wep_railgun_h",
+  "name": "“破城者”重型磁轨主炮",
+  "faction": "HeavyFoundry",
+  "category": "Weapon",
+  "width": 3,
+  "height": 1,
+  "mass": 18.0,
+  "baseHp": 450.0,
+  "armorResistance": 40.0,
+  "spritePath": "textures/weapons/hf_railgun.png",
+  "pins": [
+	{ "pinId": "power_in", "type": "IN", "localGridX": 1, "localGridY": 0, "category": "HeavyPulse" }
+  ],
+  "properties": {
+	"baseDamage": 320.0,
+	"baseSpeed": 180.0,
+	"basePierce": 2,
+	"effectsOnFire": [
+	  { "type": "RecoilImpulse", "impulse": 2400.0 }
+	],
+	"effectsOnHit": [
+	  { "type": "ExplodeOnHit", "radiusMeters": 8.0, "aoeDamage": 120.0 }
+	]
+  }
+}

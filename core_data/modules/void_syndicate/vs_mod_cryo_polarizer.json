@@ -1,0 +1,21 @@
+{
+  "id": "vs_mod_cryo_polarizer",
+  "name": "高维极寒偏振极化环",
+  "faction": "VoidSyndicate",
+  "category": "Modifier",
+  "width": 2,
+  "height": 2,
+  "mass": 7.0,
+  "baseHp": 260.0,
+  "armorResistance": 12.0,
+  "spritePath": "textures/modules/vs_polarizer.png",
+  "pins": [
+	{ "pinId": "in_1", "type": "IN", "localGridX": 1, "localGridY": 1, "category": "Universal" },
+	{ "pinId": "out_1", "type": "OUT", "localGridX": 1, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"effectsOnPulse": [
+	  { "type": "ApplyCryo", "heatReduction": 0.50, "slowDuration": 3.0 }
+	]
+  }
+}

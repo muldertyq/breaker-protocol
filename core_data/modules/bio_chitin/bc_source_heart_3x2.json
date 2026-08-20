@@ -1,0 +1,19 @@
+{
+  "id": "bc_source_heart_3x2",
+  "name": "生化脉动共振心房",
+  "faction": "BioChitin",
+  "category": "PowerSource",
+  "width": 3,
+  "height": 2,
+  "mass": 18.0,
+  "baseHp": 680.0,
+  "armorResistance": 20.0,
+  "spritePath": "textures/modules/bc_heart.png",
+  "pins": [
+	{ "pinId": "out_1", "type": "OUT", "localGridX": 1, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"pulseOutput": 3.0,
+	"heatPerSecond": 5.0
+  }
+}

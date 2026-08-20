@@ -1,0 +1,21 @@
+{
+  "id": "bc_mod_acid_injector",
+  "name": "强酸注蚀囊腔",
+  "faction": "BioChitin",
+  "category": "Modifier",
+  "width": 1,
+  "height": 1,
+  "mass": 3.0,
+  "baseHp": 180.0,
+  "armorResistance": 10.0,
+  "spritePath": "textures/modules/bc_acid_injector.png",
+  "pins": [
+	{ "pinId": "in_1", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_1", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"effectsOnPulse": [
+	  { "type": "ApplyFire", "burnDps": 30.0 }
+	]
+  }
+}

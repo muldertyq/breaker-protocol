@@ -1,0 +1,20 @@
+{
+  "id": "hf_log_capacitor",
+  "name": "战术储能电容舱",
+  "faction": "Universal",
+  "category": "Logic",
+  "width": 1,
+  "height": 1,
+  "mass": 2.0,
+  "baseHp": 180.0,
+  "armorResistance": 12.0,
+  "spritePath": "textures/modules/logic_capacitor.png",
+  "pins": [
+	{ "pinId": "in_pwr", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_pwr", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"logicType": "Capacitor",
+	"bonusCapacity": 8
+  }
+}

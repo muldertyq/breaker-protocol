@@ -1,0 +1,19 @@
+{
+  "id": "bp_bc_m_carapace",
+  "name": "“甲壳”级强酸腐蚀驱逐舰",
+  "faction": "BioChitin",
+  "hullClass": "M",
+  "description": "两侧包裹厚重生物角质骨甲，心房连通基因突变分泌腺与强酸虫巢。",
+  "modules": [
+	{ "moduleId": "bc_source_heart_3x2", "gridX": -1, "gridY": 1, "rotation": 0 },
+	{ "moduleId": "bc_mod_mutagen_chamber", "gridX": -1, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "bc_wep_acid_spitter_h", "gridX": -1, "gridY": -2, "rotation": 0 },
+	{ "moduleId": "bc_arm_chitin_plate_2x2", "gridX": -3, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "bc_arm_chitin_plate_2x2", "gridX": 2, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "bc_eng_bio_jet_2x2", "gridX": -1, "gridY": 3, "rotation": 0 }
+  ],
+  "wires": [
+	{ "sourceGridX": 0, "sourceGridY": 1, "targetGridX": 0, "targetGridY": 0 },
+	{ "sourceGridX": 0, "sourceGridY": 0, "targetGridX": 0, "targetGridY": -1 }
+  ]
+}

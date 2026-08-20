@@ -1,0 +1,16 @@
+{
+  "id": "hf_arm_plate_2x2",
+  "name": "重型叠层装甲块",
+  "faction": "HeavyFoundry",
+  "category": "Armor",
+  "width": 2,
+  "height": 2,
+  "mass": 35.0,
+  "baseHp": 800.0,
+  "armorResistance": 50.0,
+  "spritePath": "textures/modules/hf_armor_plate.png",
+  "pins": [],
+  "properties": {
+	"bounceAngleThreshold": 65.0
+  }
+}

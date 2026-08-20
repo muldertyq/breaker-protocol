@@ -1,0 +1,16 @@
+{
+  "id": "bp_bc_s_leech",
+  "name": "“水蛭”级高速自爆突刺虫",
+  "faction": "BioChitin",
+  "hullClass": "S",
+  "description": "搏动心房驱动高压生化喷射腺，舰首装配突刺撞角。",
+  "modules": [
+	{ "moduleId": "bc_source_heart_3x2", "gridX": -1, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "bc_arm_spiked_prow_3x1", "gridX": -1, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "bc_wep_spore_launcher_m", "gridX": -1, "gridY": -2, "rotation": 0 },
+	{ "moduleId": "bc_eng_bio_jet_2x2", "gridX": -1, "gridY": 2, "rotation": 0 }
+  ],
+  "wires": [
+	{ "sourceGridX": 0, "sourceGridY": 0, "targetGridX": 0, "targetGridY": -2 }
+  ]
+}

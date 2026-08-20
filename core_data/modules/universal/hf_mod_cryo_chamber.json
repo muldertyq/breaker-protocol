@@ -1,0 +1,22 @@
+{
+  "id": "hf_mod_cryo_chamber",
+  "name": "极寒冷凝修饰舱",
+  "faction": "Universal",
+  "category": "Modifier",
+  "width": 2,
+  "height": 2,
+  "mass": 8.0,
+  "baseHp": 300.0,
+  "armorResistance": 10.0,
+  "spritePath": "textures/modules/cryo_chamber.png",
+  "pins": [
+	{ "pinId": "in_1", "type": "IN", "localGridX": 0, "localGridY": 1, "category": "Universal" },
+	{ "pinId": "out_1", "type": "OUT", "localGridX": 1, "localGridY": 1, "category": "Universal" }
+  ],
+  "properties": {
+	"effectsOnPulse": [
+	  { "type": "ApplyCryo", "heatReduction": 0.40, "slowDuration": 2.5 },
+	  { "type": "ModifyPierce", "extraPierce": 2 }
+	]
+  }
+}

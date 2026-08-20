@@ -1,0 +1,16 @@
+{
+  "id": "vs_arm_flux_shield_2x1",
+  "name": "相位偏转力场甲板",
+  "faction": "VoidSyndicate",
+  "category": "Armor",
+  "width": 2,
+  "height": 1,
+  "mass": 12.0,
+  "baseHp": 400.0,
+  "armorResistance": 30.0,
+  "spritePath": "textures/modules/vs_flux_shield.png",
+  "pins": [],
+  "properties": {
+	"bounceAngleThreshold": 55.0
+  }
+}

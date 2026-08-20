@@ -1,0 +1,21 @@
+{
+  "id": "vs_wep_tachyon_lance_h",
+  "name": "“天谴”超光子贯穿光矛",
+  "faction": "VoidSyndicate",
+  "category": "Weapon",
+  "width": 3,
+  "height": 1,
+  "mass": 16.0,
+  "baseHp": 380.0,
+  "armorResistance": 20.0,
+  "spritePath": "textures/weapons/vs_tachyon_lance.png",
+  "pins": [
+	{ "pinId": "power_in", "type": "IN", "localGridX": 1, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"baseDamage": 550.0,
+	"baseSpeed": 350.0,
+	"basePierce": 5,
+	"fireRate": 2.0
+  }
+}

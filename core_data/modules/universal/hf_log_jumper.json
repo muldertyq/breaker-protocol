@@ -1,0 +1,21 @@
+{
+  "id": "hf_log_jumper",
+  "name": "立体跨线绝缘桥",
+  "faction": "Universal",
+  "category": "Logic",
+  "width": 1,
+  "height": 1,
+  "mass": 1.0,
+  "baseHp": 120.0,
+  "armorResistance": 10.0,
+  "spritePath": "textures/modules/logic_jumper.png",
+  "pins": [
+	{ "pinId": "in_h", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_h", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "in_v", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_v", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"logicType": "Jumper"
+  }
+}

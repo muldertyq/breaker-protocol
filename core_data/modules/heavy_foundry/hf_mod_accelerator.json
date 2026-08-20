@@ -1,0 +1,21 @@
+{
+  "id": "hf_mod_accelerator",
+  "name": "重工磁轨线性加速膛",
+  "faction": "HeavyFoundry",
+  "category": "Modifier",
+  "width": 2,
+  "height": 1,
+  "mass": 6.0,
+  "baseHp": 260.0,
+  "armorResistance": 15.0,
+  "spritePath": "textures/modules/hf_accelerator.png",
+  "pins": [
+	{ "pinId": "in_1", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_1", "type": "OUT", "localGridX": 1, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"effectsOnPulse": [
+	  { "type": "ModifyPierce", "extraPierce": 2 }
+	]
+  }
+}

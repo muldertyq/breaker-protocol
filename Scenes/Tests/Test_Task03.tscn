@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://ciloumvwbyl2l"]
+
+[ext_resource type="Script" uid="uid://5gpaxpj177mw" path="res://Scripts/Test/Test_Task03.cs" id="1_d2wcc"]
+
+[node name="TestTask03" type="Control" unique_id=406370593]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_d2wcc")

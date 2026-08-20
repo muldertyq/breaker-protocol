@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://blb4lqecu3v7q"]
+
+[ext_resource type="Script" uid="uid://rxflya0l1tov" path="res://Scripts/Test/Test_Task10.cs" id="1_jhdi8"]
+[ext_resource type="Script" uid="uid://c348cmajq8trh" path="res://Scripts/Test/BackgroundGrid.cs" id="2_x34bg"]
+
+[node name="TestTask10" type="Node2D" unique_id=557589869]
+script = ExtResource("1_jhdi8")
+
+[node name="BackgroundGrid" type="Node2D" parent="." unique_id=973653468]
+script = ExtResource("2_x34bg")

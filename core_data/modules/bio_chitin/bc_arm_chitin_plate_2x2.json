@@ -1,0 +1,16 @@
+{
+  "id": "bc_arm_chitin_plate_2x2",
+  "name": "生物硬化角质骨甲",
+  "faction": "BioChitin",
+  "category": "Armor",
+  "width": 2,
+  "height": 2,
+  "mass": 16.0,
+  "baseHp": 550.0,
+  "armorResistance": 25.0,
+  "spritePath": "textures/modules/bc_chitin_plate.png",
+  "pins": [],
+  "properties": {
+	"bounceAngleThreshold": 50.0
+  }
+}

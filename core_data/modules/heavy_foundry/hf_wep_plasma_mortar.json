@@ -1,0 +1,25 @@
+{
+  "id": "hf_wep_plasma_mortar",
+  "name": "“巨人”重型等离子迫击炮",
+  "faction": "HeavyFoundry",
+  "category": "Weapon",
+  "width": 2,
+  "height": 2,
+  "mass": 24.0,
+  "baseHp": 500.0,
+  "armorResistance": 35.0,
+  "spritePath": "textures/weapons/hf_mortar.png",
+  "pins": [
+	{ "pinId": "power_in", "type": "IN", "localGridX": 0, "localGridY": 1, "category": "Universal" }
+  ],
+  "properties": {
+	"baseDamage": 400.0,
+	"baseSpeed": 100.0,
+	"basePierce": 1,
+	"pulseCost": 2,
+	"fireRate": 3.0,
+	"effectsOnHit": [
+	  { "type": "ExplodeOnHit", "radiusMeters": 14.0, "aoeDamage": 250.0 }
+	]
+  }
+}

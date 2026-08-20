@@ -1,0 +1,16 @@
+{
+  "id": "bc_arm_spiked_prow_3x1",
+  "name": "深空突刺穿透撞角",
+  "faction": "BioChitin",
+  "category": "Armor",
+  "width": 3,
+  "height": 1,
+  "mass": 22.0,
+  "baseHp": 700.0,
+  "armorResistance": 35.0,
+  "spritePath": "textures/modules/bc_spiked_prow.png",
+  "pins": [],
+  "properties": {
+	"bounceAngleThreshold": 60.0
+  }
+}

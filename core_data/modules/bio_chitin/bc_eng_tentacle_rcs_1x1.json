@@ -1,0 +1,22 @@
+{
+  "id": "bc_eng_tentacle_rcs_1x1",
+  "name": "柔性触须导向微喷",
+  "faction": "BioChitin",
+  "category": "Thruster",
+  "width": 1,
+  "height": 1,
+  "mass": 2.0,
+  "baseHp": 180.0,
+  "armorResistance": 12.0,
+  "spritePath": "textures/modules/bc_tentacle_rcs.png",
+  "pins": [
+	{ "pinId": "pwr_in", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"thrustForce": 4000.0,
+	"torqueContribution": 16000.0,
+	"thrustDirection": "Omni",
+	"flameColor": [0.2, 0.8, 0.5, 0.8],
+	"flameLength": 12.0
+  }
+}

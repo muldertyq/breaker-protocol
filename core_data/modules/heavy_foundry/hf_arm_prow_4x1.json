@@ -1,0 +1,16 @@
+{
+  "id": "hf_arm_prow_4x1",
+  "name": "穿浪首重型斜装甲",
+  "faction": "HeavyFoundry",
+  "category": "Armor",
+  "width": 4,
+  "height": 1,
+  "mass": 28.0,
+  "baseHp": 650.0,
+  "armorResistance": 45.0,
+  "spritePath": "textures/modules/hf_prow.png",
+  "pins": [],
+  "properties": {
+	"bounceAngleThreshold": 60.0
+  }
+}

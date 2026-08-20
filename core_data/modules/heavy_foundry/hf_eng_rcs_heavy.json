@@ -1,0 +1,22 @@
+{
+  "id": "hf_eng_rcs_heavy",
+  "name": "重型全向姿态喷口 (RCS)",
+  "faction": "HeavyFoundry",
+  "category": "Thruster",
+  "width": 1,
+  "height": 1,
+  "mass": 2.5,
+  "baseHp": 200.0,
+  "armorResistance": 15.0,
+  "spritePath": "textures/modules/hf_rcs.png",
+  "pins": [
+	{ "pinId": "pwr_in", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"thrustForce": 4500.0,
+	"torqueContribution": 18000.0,
+	"thrustDirection": "Omni",
+	"flameColor": [0.4, 0.8, 1.0, 0.9],
+	"flameLength": 12.0
+  }
+}

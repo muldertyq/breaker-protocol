@@ -1,0 +1,21 @@
+{
+  "id": "mod_custom_gauss_s",
+  "name": "高斯副炮",
+  "faction": "Universal",
+  "category": "Weapon",
+  "width": 2,
+  "height": 1,
+  "mass": 6.0,
+  "baseHp": 200.0,
+  "armorResistance": 10.0,
+  "spritePath": "textures/weapons/gauss.png",
+  "pins": [
+	{ "pinId": "pwr_in", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"baseDamage": 80.0,
+	"baseSpeed": 200.0,
+	"basePierce": 1,
+	"fireRate": 5.0
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "bc_mod_mutagen_chamber",
+  "name": "基因突变剧毒分泌腺",
+  "faction": "BioChitin",
+  "category": "Modifier",
+  "width": 2,
+  "height": 1,
+  "mass": 6.0,
+  "baseHp": 250.0,
+  "armorResistance": 12.0,
+  "spritePath": "textures/modules/bc_mutagen.png",
+  "pins": [
+	{ "pinId": "in_1", "type": "IN", "localGridX": 1, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_1", "type": "OUT", "localGridX": 1, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"effectsOnPulse": [
+	  { "type": "ApplyFire", "burnDps": 25.0 }
+	]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "bp_hf_s_hammerhead",
+  "name": "“锤头”级轻型突击巡逻艇",
+  "faction": "HeavyFoundry",
+  "hullClass": "S",
+  "description": "重工联合经典轻型舰体，搭载加特林转轮炮与单发泰坦主推。",
+  "modules": [
+	{ "moduleId": "hf_source_core_2x2", "gridX": -1, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "hf_wep_gatling_m", "gridX": -1, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "hf_arm_prow_4x1", "gridX": -2, "gridY": -2, "rotation": 0 },
+	{ "moduleId": "hf_eng_titan_main", "gridX": -1, "gridY": 2, "rotation": 0 },
+	{ "moduleId": "hf_eng_rcs_heavy", "gridX": -2, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "hf_eng_rcs_heavy", "gridX": 1, "gridY": 0, "rotation": 0 }
+  ],
+  "wires": [
+	{ "sourceGridX": -1, "sourceGridY": 0, "targetGridX": -1, "targetGridY": -1 }
+  ]
+}

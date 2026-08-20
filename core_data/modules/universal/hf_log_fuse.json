@@ -1,0 +1,20 @@
+{
+  "id": "hf_log_fuse",
+  "name": "防殉爆自断保险阀",
+  "category": "Logic",
+  "faction": "Universal",
+  "tier": 2,
+  "size": [1, 1],
+  "mass": 4.0,
+  "maxHp": 30.0,
+  "armorResistance": 2.0,
+  "pins": [
+	{ "pinId": "in_1", "type": "IN", "category": "Universal", "localPos": [0, 0], "bandwidthCapacity": 10 },
+	{ "pinId": "out_1", "type": "OUT", "category": "Universal", "localPos": [0, 0], "bandwidthCapacity": 10 }
+  ],
+  "properties": {
+	"logicType": "Fuse",
+	"fuseTripTime": 0.1,
+	"description": "安装在危险电容/弹药舱与核心之间的安全阀。检测到逆向殉爆冲击波时 0.1s 极速自熔断阻断火势。"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "bp_vs_s_ghost",
+  "name": "“幽灵”级相位拦截机",
+  "faction": "VoidSyndicate",
+  "hullClass": "S",
+  "description": "极速折跃推进器与相位聚焦激光，深空幽灵刺客。",
+  "modules": [
+	{ "moduleId": "vs_source_singularity_3x2", "gridX": -1, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "vs_wep_phase_laser_m", "gridX": -1, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "vs_eng_warp_drive_3x1", "gridX": -1, "gridY": 2, "rotation": 0 },
+	{ "moduleId": "vs_eng_vector_rcs_1x1", "gridX": -2, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "vs_eng_vector_rcs_1x1", "gridX": 2, "gridY": 0, "rotation": 0 }
+  ],
+  "wires": [
+	{ "sourceGridX": 0, "sourceGridY": 0, "targetGridX": 0, "targetGridY": -1 }
+  ]
+}

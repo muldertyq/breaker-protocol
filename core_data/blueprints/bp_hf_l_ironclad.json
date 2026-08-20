@@ -1,0 +1,22 @@
+{
+  "id": "bp_hf_l_ironclad",
+  "name": "“铁甲”级主力重型战列巡洋舰",
+  "faction": "HeavyFoundry",
+  "hullClass": "L",
+  "description": "重工业造船巅峰，双聚变反应堆驱动主轨炮与等离子迫击炮双主武器。",
+  "modules": [
+	{ "moduleId": "hf_source_core_2x2", "gridX": -2, "gridY": 1, "rotation": 0 },
+	{ "moduleId": "hf_source_core_2x2", "gridX": 0, "gridY": 1, "rotation": 0 },
+	{ "moduleId": "hf_log_splitter", "gridX": -1, "gridY": 0, "rotation": 0 },
+	{ "moduleId": "hf_wep_railgun_h", "gridX": -1, "gridY": -2, "rotation": 0 },
+	{ "moduleId": "hf_wep_plasma_mortar", "gridX": -1, "gridY": -4, "rotation": 0 },
+	{ "moduleId": "hf_arm_plate_2x2", "gridX": -3, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "hf_arm_plate_2x2", "gridX": 1, "gridY": -1, "rotation": 0 },
+	{ "moduleId": "hf_eng_titan_main", "gridX": -3, "gridY": 3, "rotation": 0 },
+	{ "moduleId": "hf_eng_titan_main", "gridX": 0, "gridY": 3, "rotation": 0 }
+  ],
+  "wires": [
+	{ "sourceGridX": -2, "sourceGridY": 1, "targetGridX": -1, "targetGridY": 0 },
+	{ "sourceGridX": -1, "sourceGridY": 0, "targetGridX": 0, "targetGridY": -2 }
+  ]
+}

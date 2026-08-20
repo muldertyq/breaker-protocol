@@ -1,0 +1,9 @@
+{
+  "id": "core_data",
+  "name": "《断路协议》官方核心数据包",
+  "version": "1.0.0",
+  "author": "BreakerProtocol Dev Team",
+  "description": "游戏官方核心构件、势力与底层蓝图规范。",
+  "priority": 0,
+  "enabled": true
+}

@@ -1,0 +1,21 @@
+{
+  "id": "hf_log_splitter",
+  "name": "总线分流器 (1入2出)",
+  "faction": "Universal",
+  "category": "Logic",
+  "width": 1,
+  "height": 1,
+  "mass": 1.5,
+  "baseHp": 150.0,
+  "armorResistance": 10.0,
+  "spritePath": "textures/modules/logic_splitter.png",
+  "pins": [
+	{ "pinId": "in_main", "type": "IN", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_a", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "Universal" },
+	{ "pinId": "out_b", "type": "OUT", "localGridX": 0, "localGridY": 0, "category": "Universal" }
+  ],
+  "properties": {
+	"logicType": "Splitter",
+	"splitMode": "Alternating"
+  }
+}
