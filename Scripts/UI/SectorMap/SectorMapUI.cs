@@ -1,16 +1,19 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using BreakerProtocol.Core;
+using BreakerProtocol.World.Sector;
 
-namespace BreakerProtocol.World.Sector
+namespace BreakerProtocol.UI.SectorMap
 {
 	/// <summary>
-	/// 交互式全息星区作战地图 (支持视口自适应、双通道鼠标交互、侦察卡片与追击波前)
+	/// 交互式全息星区作战地图 UI (支持视口自适应、双通道鼠标交互、侦察卡片与即时返回空战)
 	/// </summary>
 	public partial class SectorMapUI : Control
 	{
 		public SectorGraph Graph { get; private set; } = null!;
 		public event Action<SectorNode>? OnNodeSelected;
+		public event Action? OnBackToGameRequested;
 
 		private float _animTime = 0.0f;
 		private Rect2 _mapArea;
@@ -24,7 +27,6 @@ namespace BreakerProtocol.World.Sector
 			GrowVertical = GrowDirection.Both;
 			MouseFilter = MouseFilterEnum.Stop;
 
-			// 强制初始化视口尺寸
 			Vector2 vpSize = GetViewportRect().Size;
 			CustomMinimumSize = vpSize;
 			Size = vpSize;
@@ -38,9 +40,10 @@ namespace BreakerProtocol.World.Sector
 
 		public override void _Process(double delta)
 		{
+			if (!Visible) return;
+
 			_animTime += (float)delta * 3.5f;
 
-			// 视口尺寸动态同步 (彻底根除 CanvasLayer 下尺寸为 0 的 Bug)
 			Vector2 vpSize = GetViewportRect().Size;
 			if (vpSize.X > 100 && vpSize.Y > 100 && Size != vpSize)
 			{
@@ -48,7 +51,6 @@ namespace BreakerProtocol.World.Sector
 				CustomMinimumSize = vpSize;
 			}
 
-			// 每帧主动解算鼠标位置与悬停节点
 			_currentMousePos = GetLocalMousePosition();
 			UpdateHoveredNode(_currentMousePos);
 
@@ -72,19 +74,22 @@ namespace BreakerProtocol.World.Sector
 				}
 			}
 
-			if (_hoveredNode != prevHover)
+			bool isHoverBack = GetBackButtonRect().HasPoint(mousePos);
+
+			if (_hoveredNode != prevHover || isHoverBack)
 			{
-				MouseDefaultCursorShape = (_hoveredNode != null && _hoveredNode.State == NodeExplorationState.Reachable)
+				MouseDefaultCursorShape = ((_hoveredNode != null && _hoveredNode.State == NodeExplorationState.Reachable) || isHoverBack)
 					? CursorShape.PointingHand
 					: CursorShape.Arrow;
 			}
 		}
 
 		// -------------------------------------------------------------
-		// 双通道鼠标输入监听 (确保 100% 捕获点击事件)
+		// 双通道鼠标输入与 ESC 快捷关闭
 		// -------------------------------------------------------------
 		public override void _GuiInput(InputEvent @event)
 		{
+			if (!Visible) return;
 			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
 			{
 				HandleNodeClick(_currentMousePos);
@@ -94,14 +99,31 @@ namespace BreakerProtocol.World.Sector
 
 		public override void _UnhandledInput(InputEvent @event)
 		{
+			if (!Visible) return;
 			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
 			{
 				HandleNodeClick(_currentMousePos);
+			}
+			else if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				// [ESC 键] 或 [M 键]: 即刻关闭星图返回空战
+				if (ek.Keycode == Key.Escape || ek.Keycode == Key.M)
+				{
+					OnBackToGameRequested?.Invoke();
+				}
 			}
 		}
 
 		private void HandleNodeClick(Vector2 clickPos)
 		{
+			// 1. 点击返回空战按钮
+			if (GetBackButtonRect().HasPoint(clickPos))
+			{
+				OnBackToGameRequested?.Invoke();
+				return;
+			}
+
+			// 2. 点击航道节点进行跃迁
 			if (Graph == null) return;
 
 			foreach (var node in Graph.AllNodes.Values)
@@ -118,25 +140,19 @@ namespace BreakerProtocol.World.Sector
 			}
 		}
 
-		/// <summary>
-		/// 执行超空间跳跃到目标节点，并推进追击舰队前线
-		/// </summary>
 		public void ExecuteJumpToNode(SectorNode targetNode)
 		{
-			// 1. 将上一个驻泊节点设为 Visited (已探索)
 			if (Graph.CurrentNodeId != null && Graph.AllNodes.TryGetValue(Graph.CurrentNodeId, out var prevNode))
 			{
 				prevNode.State = NodeExplorationState.Visited;
 			}
 
-			// 2. 将当前选中的目标节点设为 Current (舰队驻泊中)
 			Graph.CurrentNodeId = targetNode.Id;
 			targetNode.State = NodeExplorationState.Current;
 
-			// 3. 推进追击前线 (+1.0 列)
+			// 推进追击前线
 			Graph.PursuitWavefrontColumn += 1.0f;
 
-			// 4. 重置旧的可达节点，并将处于追击波前左侧的未访问节点设为 Overrun (沦陷)
 			foreach (var node in Graph.AllNodes.Values)
 			{
 				if (node.State == NodeExplorationState.Reachable)
@@ -150,7 +166,6 @@ namespace BreakerProtocol.World.Sector
 				}
 			}
 
-			// 5. 激活当前节点所有正向连线的下一列节点为 Reachable (可跃迁)
 			foreach (var nextId in targetNode.OutgoingConnections)
 			{
 				if (Graph.AllNodes.TryGetValue(nextId, out var nextNode))
@@ -166,22 +181,34 @@ namespace BreakerProtocol.World.Sector
 			QueueRedraw();
 		}
 
+		private Rect2 GetBackButtonRect()
+		{
+			Vector2 vpSize = GetViewportRect().Size;
+			return new Rect2(80, vpSize.Y - 70, 240, 42);
+		}
+
 		public override void _Draw()
 		{
-			if (Graph == null) return;
+			if (!Visible || Graph == null) return;
 
 			Vector2 vpSize = GetViewportRect().Size;
 			float w = vpSize.X > 100 ? vpSize.X : 1280.0f;
 			float h = vpSize.Y > 100 ? vpSize.Y : 720.0f;
 
-			_mapArea = new Rect2(80, 95, w - 160, h - 180);
+			_mapArea = new Rect2(80, 85, w - 160, h - 170);
+			var font = ThemeDB.FallbackFont;
 
 			// 1. 绘制科幻深空网格背板
 			DrawRect(_mapArea, new Color(0.02f, 0.04f, 0.07f, 0.95f));
 			DrawGridLines(_mapArea);
 			DrawRect(_mapArea, new Color(0.15f, 0.35f, 0.65f, 0.7f), false, 2.0f);
 
-			// 2. 绘制追击前线危险区域
+			// 2. 标头栏
+			DrawString(font, new Vector2(80, 45), "✦ 战术星区 DAG 跃迁拓扑星图 ✦ SECTOR NAVIGATION NEXUS", HorizontalAlignment.Left, -1, 16, Colors.Gold);
+			DrawString(font, new Vector2(w - 360, 45), "• 鼠标悬停侦察情报 | 点击青绿节点跃迁", HorizontalAlignment.Right, -1, 12, Colors.LightGray);
+			DrawLine(new Vector2(70, 60), new Vector2(w - 70, 60), new Color(0.3f, 0.5f, 0.7f, 0.4f), 1.5f);
+
+			// 3. 绘制追击前线危险区域
 			float pursuitX = _mapArea.Position.X + ((Graph.PursuitWavefrontColumn + 0.5f) / Graph.TotalColumns) * _mapArea.Size.X;
 			if (pursuitX > _mapArea.Position.X)
 			{
@@ -189,12 +216,10 @@ namespace BreakerProtocol.World.Sector
 				var overrunRect = new Rect2(_mapArea.Position.X, _mapArea.Position.Y, overrunWidth, _mapArea.Size.Y);
 				DrawRect(overrunRect, new Color(0.85f, 0.12f, 0.12f, 0.22f));
 				DrawLine(new Vector2(pursuitX, _mapArea.Position.Y), new Vector2(pursuitX, _mapArea.End.Y), Colors.OrangeRed, 3.0f);
-
-				// 追击线标头
-				DrawString(ThemeDB.FallbackFont, new Vector2(pursuitX - 60, _mapArea.Position.Y + 20), "[ ⚠️ 追击前线 ]", HorizontalAlignment.Center, -1, 11, Colors.OrangeRed);
+				DrawString(font, new Vector2(pursuitX - 60, _mapArea.Position.Y + 20), "[ ⚠️ 追击前线 ]", HorizontalAlignment.Center, -1, 11, Colors.OrangeRed);
 			}
 
-			// 3. 绘制航路连线
+			// 4. 绘制航路连线
 			foreach (var node in Graph.AllNodes.Values)
 			{
 				Vector2 startPos = GetNodeScreenPosition(node);
@@ -208,14 +233,21 @@ namespace BreakerProtocol.World.Sector
 				}
 			}
 
-			// 4. 绘制所有战术徽章节点
+			// 5. 绘制所有战术徽章节点
 			foreach (var node in Graph.AllNodes.Values)
 			{
 				Vector2 pos = GetNodeScreenPosition(node);
 				DrawTacticalBadgeNode(node, pos);
 			}
 
-			// 5. 最顶层绘制鼠标悬停战术侦察卡片 (Tooltip)
+			// 6. 绘制左下角返回空战按钮
+			Rect2 backBtn = GetBackButtonRect();
+			bool isHoverBack = backBtn.HasPoint(_currentMousePos);
+			DrawRect(backBtn, isHoverBack ? new Color(0.15f, 0.45f, 0.65f) : new Color(0.08f, 0.20f, 0.35f));
+			DrawRect(backBtn, isHoverBack ? Colors.White : Colors.Cyan, false, 1.2f);
+			DrawString(font, backBtn.Position + new Vector2(25, 26), "◀ 关闭星图 · 返回空战 (ESC)", HorizontalAlignment.Center, -1, 12, Colors.White);
+
+			// 7. 顶层绘制战术侦察卡片
 			if (_hoveredNode != null)
 			{
 				DrawTacticalTooltip(_hoveredNode, _currentMousePos);
@@ -294,10 +326,8 @@ namespace BreakerProtocol.World.Sector
 					break;
 			}
 
-			// 绘制中心矢量图形
 			DrawNodeVectorIcon(node.Type, pos, (node.State == NodeExplorationState.Visited) ? Colors.Gray : Colors.Black);
 
-			// 绘制底部全称
 			string name = node.GetDisplayName();
 			var font = ThemeDB.FallbackFont;
 			Vector2 strSize = font.GetStringSize(name, HorizontalAlignment.Center, -1, 10);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Godot;
 using BreakerProtocol.Core;
@@ -6,10 +7,12 @@ using BreakerProtocol.World.Meta;
 namespace BreakerProtocol.UI.Meta
 {
 	/// <summary>
-	/// 全息母港科研局 Meta 科技树操作界面
+	/// 全息母港科研局 Meta 科技树操作界面 (支持全景 3 列分支、前置连线、即时反馈与返回导航)
 	/// </summary>
 	public partial class MetaTechTreeUI : Control
 	{
+		public event Action? OnBackRequested;
+
 		private Rect2 _panelArea;
 		private float _animTime = 0.0f;
 		private Vector2 _currentMousePos = Vector2.Zero;
@@ -31,6 +34,8 @@ namespace BreakerProtocol.UI.Meta
 
 		public override void _Process(double delta)
 		{
+			if (!Visible) return;
+
 			_animTime += (float)delta * 3.0f;
 
 			Vector2 vpSize = GetViewportRect().Size;
@@ -59,13 +64,16 @@ namespace BreakerProtocol.UI.Meta
 				}
 			}
 
-			// 检查底部按钮悬停
-			bool isHoverBtn = GetResetButtonRect().HasPoint(mousePos) || GetAddPointsButtonRect().HasPoint(mousePos);
+			bool isHoverBtn = GetBackButtonRect().HasPoint(mousePos) ||
+							  GetResetButtonRect().HasPoint(mousePos) ||
+							  GetAddPointsButtonRect().HasPoint(mousePos);
+
 			MouseDefaultCursorShape = (_hoveredNode != null || isHoverBtn) ? CursorShape.PointingHand : CursorShape.Arrow;
 		}
 
 		public override void _GuiInput(InputEvent @event)
 		{
+			if (!Visible) return;
 			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
 			{
 				HandleClick(_currentMousePos);
@@ -80,18 +88,22 @@ namespace BreakerProtocol.UI.Meta
 			{
 				HandleClick(_currentMousePos);
 			}
+			else if (@event is InputEventKey ek && ek.Pressed && !ek.Echo)
+			{
+				if (ek.Keycode == Key.Escape || ek.Keycode == Key.Backspace)
+				{
+					OnBackRequested?.Invoke();
+				}
+			}
 		}
 
 		private void HandleClick(Vector2 clickPos)
 		{
-			// 1. 点击科技节点进行解锁
-			foreach (var tech in MetaProgressionManager.Instance.AllTechs.Values)
+			// 1. 返回主菜单按钮
+			if (GetBackButtonRect().HasPoint(clickPos))
 			{
-				if (GetNodeScreenRect(tech).HasPoint(clickPos))
-				{
-					TryUnlockTech(tech);
-					return;
-				}
+				OnBackRequested?.Invoke();
+				return;
 			}
 
 			// 2. 点击重置洗点
@@ -101,14 +113,27 @@ namespace BreakerProtocol.UI.Meta
 				_feedbackLog = "🔄 所有科技已重置，研发数据碎片已 100% 全额返还！";
 				_feedbackColor = Colors.Yellow;
 				QueueRedraw();
+				return;
 			}
+
 			// 3. 点击注资调试
-			else if (GetAddPointsButtonRect().HasPoint(clickPos))
+			if (GetAddPointsButtonRect().HasPoint(clickPos))
 			{
 				MetaProgressionManager.Instance.AddDataFragments(100);
 				_feedbackLog = "💾 母港科研赞助到账！获得 +100 研发数据碎片。";
 				_feedbackColor = Colors.LimeGreen;
 				QueueRedraw();
+				return;
+			}
+
+			// 4. 点击科技节点进行解锁
+			foreach (var tech in MetaProgressionManager.Instance.AllTechs.Values)
+			{
+				if (GetNodeScreenRect(tech).HasPoint(clickPos))
+				{
+					TryUnlockTech(tech);
+					return;
+				}
 			}
 		}
 
@@ -161,20 +186,28 @@ namespace BreakerProtocol.UI.Meta
 			return new Rect2(pos.X - 100, pos.Y - 32, 200, 64);
 		}
 
+		private Rect2 GetBackButtonRect()
+		{
+			var panel = GetPanelArea();
+			return new Rect2(panel.Position.X + 25, panel.End.Y - 60, 180, 38);
+		}
+
 		private Rect2 GetResetButtonRect()
 		{
 			var panel = GetPanelArea();
-			return new Rect2(panel.Position.X + 30, panel.End.Y - 60, 200, 38);
+			return new Rect2(panel.Position.X + 220, panel.End.Y - 60, 180, 38);
 		}
 
 		private Rect2 GetAddPointsButtonRect()
 		{
 			var panel = GetPanelArea();
-			return new Rect2(panel.Position.X + 250, panel.End.Y - 60, 200, 38);
+			return new Rect2(panel.Position.X + 415, panel.End.Y - 60, 180, 38);
 		}
 
 		public override void _Draw()
 		{
+			if (!Visible) return;
+
 			_panelArea = GetPanelArea();
 			var font = ThemeDB.FallbackFont;
 
@@ -188,7 +221,7 @@ namespace BreakerProtocol.UI.Meta
 			DrawString(font, _panelArea.Position + new Vector2(_panelArea.Size.X - 260, 38), dataTag, HorizontalAlignment.Right, -1, 15, Colors.Cyan);
 			DrawLine(_panelArea.Position + new Vector2(25, 52), _panelArea.Position + new Vector2(_panelArea.Size.X - 25, 52), new Color(0.3f, 0.5f, 0.7f, 0.4f), 1.5f);
 
-			// 3. 绘制 3 大派系分支列标头
+			// 3. 绘制 3 大派系分支列标头 (全景 3 列并排)
 			DrawString(font, _panelArea.Position + new Vector2(140, 90), "🛡️ [ 重工冶金派系 ]", HorizontalAlignment.Center, -1, 14, new Color(0.95f, 0.5f, 0.3f));
 			DrawString(font, _panelArea.Position + new Vector2(500, 90), "⚡ [ 超频电容派系 ]", HorizontalAlignment.Center, -1, 14, new Color(0.35f, 0.85f, 0.95f));
 			DrawString(font, _panelArea.Position + new Vector2(860, 90), "🚀 [ 矢量推进派系 ]", HorizontalAlignment.Center, -1, 14, new Color(0.45f, 0.95f, 0.45f));
@@ -215,25 +248,32 @@ namespace BreakerProtocol.UI.Meta
 				DrawTechNode(tech);
 			}
 
-			// 6. 绘制底部重置/调试按钮与反馈日志
+			// 6. 绘制底部控制条
 			DrawLine(_panelArea.Position + new Vector2(25, _panelArea.Size.Y - 75), _panelArea.Position + new Vector2(_panelArea.Size.X - 25, _panelArea.Size.Y - 75), new Color(0.3f, 0.5f, 0.7f, 0.4f), 1.5f);
 
-			// 重置按钮
+			// 按钮 1: 返回主菜单
+			Rect2 backBtn = GetBackButtonRect();
+			bool isHoverBack = backBtn.HasPoint(_currentMousePos);
+			DrawRect(backBtn, isHoverBack ? new Color(0.45f, 0.15f, 0.15f) : new Color(0.22f, 0.08f, 0.08f));
+			DrawRect(backBtn, isHoverBack ? Colors.White : Colors.OrangeRed, false, 1.2f);
+			DrawString(font, backBtn.Position + new Vector2(20, 24), "◀ 返回主菜单 (ESC)", HorizontalAlignment.Center, -1, 12, Colors.White);
+
+			// 按钮 2: 重置洗点
 			Rect2 resetBtn = GetResetButtonRect();
 			bool isHoverReset = resetBtn.HasPoint(_currentMousePos);
 			DrawRect(resetBtn, isHoverReset ? new Color(0.55f, 0.2f, 0.2f) : new Color(0.35f, 0.15f, 0.15f));
 			DrawRect(resetBtn, isHoverReset ? Colors.White : Colors.OrangeRed, false, 1.2f);
-			DrawString(font, resetBtn.Position + new Vector2(25, 24), "🔄 100% 全额洗点重置", HorizontalAlignment.Center, -1, 12, Colors.White);
+			DrawString(font, resetBtn.Position + new Vector2(20, 24), "🔄 100% 全额洗点", HorizontalAlignment.Center, -1, 12, Colors.White);
 
-			// 注资调试按钮
+			// 按钮 3: 注资调试
 			Rect2 addBtn = GetAddPointsButtonRect();
 			bool isHoverAdd = addBtn.HasPoint(_currentMousePos);
 			DrawRect(addBtn, isHoverAdd ? new Color(0.2f, 0.55f, 0.35f) : new Color(0.15f, 0.35f, 0.25f));
 			DrawRect(addBtn, isHoverAdd ? Colors.White : Colors.LimeGreen, false, 1.2f);
-			DrawString(font, addBtn.Position + new Vector2(30, 24), "💾 赞助 +100 研发碎片", HorizontalAlignment.Center, -1, 12, Colors.White);
+			DrawString(font, addBtn.Position + new Vector2(20, 24), "💾 赞助 +100 碎片", HorizontalAlignment.Center, -1, 12, Colors.White);
 
-			// 反馈文本
-			DrawString(font, _panelArea.Position + new Vector2(470, _panelArea.Size.Y - 35), _feedbackLog, HorizontalAlignment.Left, -1, 12, _feedbackColor);
+			// 状态反馈文本
+			DrawString(font, _panelArea.Position + new Vector2(615, _panelArea.Size.Y - 35), _feedbackLog, HorizontalAlignment.Left, -1, 12, _feedbackColor);
 
 			// 7. 顶层绘制悬停战术卡片 (Tooltip)
 			if (_hoveredNode != null)
@@ -273,7 +313,6 @@ namespace BreakerProtocol.UI.Meta
 			DrawRect(rect, bgColor);
 			DrawRect(rect, borderColor, false, isHover ? 2.5f : (node.IsUnlocked ? 2.0f : 1.2f));
 
-			// 标题与阶数
 			string statusTag = node.IsUnlocked ? "[已激活]" : (hasPrereq ? $"{node.Cost} 💾" : "[未解锁前置]");
 			Color tagColor = node.IsUnlocked ? Colors.LimeGreen : (hasPrereq ? (canAfford ? Colors.Gold : Colors.OrangeRed) : Colors.Gray);
 

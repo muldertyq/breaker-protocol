@@ -7,11 +7,13 @@ using BreakerProtocol.UI.CombatHUD;
 using BreakerProtocol.UI.Events;
 using BreakerProtocol.UI.Market;
 using BreakerProtocol.UI.Meta;
+using BreakerProtocol.UI.SectorMap;
 using BreakerProtocol.UI.Settlement;
 using BreakerProtocol.World.Economy;
 using BreakerProtocol.World.Events;
 using BreakerProtocol.World.Meta;
 using BreakerProtocol.World.Sector;
+using BreakerProtocol.World.Session;
 using BreakerProtocol.World.Settlement;
 
 namespace BreakerProtocol.World.Director
@@ -107,7 +109,9 @@ namespace BreakerProtocol.World.Director
 		/// </summary>
 		public void TriggerGameOver(RunEndingType ending)
 		{
-			int clearedCols = (MapUI != null && MapUI.Graph != null) ? Mathf.Max(1, (int)MapUI.Graph.PursuitWavefrontColumn + 1) : 4;
+			int clearedCols = (MapUI != null && MapUI.Graph != null)
+				? Mathf.Max(1, (int)MapUI.Graph.PursuitWavefrontColumn + 1)
+				: (GameRunSession.Instance.IsSessionActive ? GameRunSession.Instance.CurrentStats.SectorsCleared : 4);
 
 			var stats = new RunStatistics
 			{

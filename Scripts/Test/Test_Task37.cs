@@ -15,6 +15,7 @@ using BreakerProtocol.UI.Events;
 using BreakerProtocol.UI.Market;
 using BreakerProtocol.UI.Meta;
 using BreakerProtocol.UI.Settlement;
+using BreakerProtocol.UI.SectorMap;
 using BreakerProtocol.World.Director;
 using BreakerProtocol.World.Economy;
 using BreakerProtocol.World.Events;

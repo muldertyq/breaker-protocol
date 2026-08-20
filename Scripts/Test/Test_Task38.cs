@@ -17,6 +17,7 @@ using BreakerProtocol.UI.Meta;
 using BreakerProtocol.UI.Pacts;
 using BreakerProtocol.UI.Sandbox;
 using BreakerProtocol.UI.Settlement;
+using BreakerProtocol.UI.SectorMap;
 using BreakerProtocol.World.Director;
 using BreakerProtocol.World.Economy;
 using BreakerProtocol.World.Events;

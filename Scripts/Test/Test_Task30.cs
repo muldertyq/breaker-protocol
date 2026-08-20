@@ -1,4 +1,5 @@
 using Godot;
+using BreakerProtocol.UI.SectorMap;
 using BreakerProtocol.World.Sector;
 
 namespace BreakerProtocol.Test
@@ -87,7 +88,7 @@ namespace BreakerProtocol.Test
 			{
 				> 2.0f => "[color=green]🟢 安全 (优势领先)[/color]",
 				> 1.0f => "[color=yellow]🟡 警惕 (追兵逼近)[/color]",
-				_      => "[color=red]🚨 极度危急 (即将沦陷！)[/color]"
+				_ => "[color=red]🚨 极度危急 (即将沦陷！)[/color]"
 			};
 
 			DisplayServer.WindowSetTitle($"《断路协议》| 星图探索 | 帧率: {fps:F0} FPS | 节点: {_mapUI.Graph.CurrentNodeId ?? "起始"}");
